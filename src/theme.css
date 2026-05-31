@@ -1,0 +1,818 @@
+/* ==========================================================================
+   Tema visual de Echo Tecnología.
+   Variables de marca tomadas del Manual de Imagen Corporativa.
+   ========================================================================== */
+:root {
+  /* Colores principales */
+  --echo-azul: #0fa6d1; /* color referente de marca */
+  --echo-azul-claro: #5ea4cf;
+  --echo-gris: #959595;
+  --echo-hueso: #f7f5f2; /* fondo claro */
+
+  /* Colores secundarios / acento */
+  --echo-turquesa: #4de2e5;
+  --echo-celeste: #94d6ea;
+  --echo-negro: #090808;
+  --echo-coral: #ff5757; /* alertas / errores */
+
+  /* Tokens de uso */
+  --color-bg: var(--echo-hueso);
+  --color-texto: var(--echo-negro);
+  --color-primario: var(--echo-azul);
+  --radio: 14px;
+  --sombra: 0 10px 30px rgba(9, 8, 8, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Kanit", system-ui, sans-serif;
+  font-weight: 300; /* Kanit Light, según el manual */
+  background: var(--color-bg);
+  color: var(--color-texto);
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 300;
+  letter-spacing: 0.3px;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* --- Pantalla de login --- */
+.login-pantalla {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.login-marca {
+  /* Degradado con los azules/turquesa de la marca */
+  background: linear-gradient(135deg, var(--echo-azul) 0%, var(--echo-turquesa) 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 64px;
+}
+
+.login-marca .logo {
+  font-size: 44px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.login-marca .logo span {
+  font-weight: 200;
+}
+
+.login-marca .lema {
+  margin-top: 16px;
+  font-size: 20px;
+  font-weight: 200;
+  max-width: 420px;
+  opacity: 0.95;
+}
+
+.login-form-zona {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+}
+
+.login-card h2 {
+  font-size: 28px;
+  margin: 0 0 4px;
+}
+
+.login-card .sub {
+  color: var(--echo-gris);
+  margin: 0 0 28px;
+}
+
+.campo {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.campo label {
+  font-size: 14px;
+  margin-bottom: 6px;
+  color: var(--echo-gris);
+}
+
+.campo input {
+  font-family: inherit;
+  padding: 12px 14px;
+  border: 1px solid #e2e0dc;
+  border-radius: 10px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.campo input:focus {
+  border-color: var(--echo-azul);
+}
+
+.btn-primario {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 10px;
+  background: var(--echo-azul);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 400;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.btn-primario:hover {
+  background: #0d93b9;
+}
+
+.btn-primario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.alerta-error {
+  background: rgba(255, 87, 87, 0.12);
+  color: #c0392b;
+  border: 1px solid rgba(255, 87, 87, 0.4);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+/* --- Dashboard --- */
+.dash {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+}
+
+.dash-sidebar {
+  background: var(--echo-negro);
+  color: #fff;
+  padding: 28px 20px;
+}
+
+.dash-sidebar .logo {
+  font-size: 24px;
+  font-weight: 500;
+  margin: 0 0 36px;
+}
+
+.dash-sidebar .logo span {
+  color: var(--echo-turquesa);
+  font-weight: 200;
+}
+
+.dash-nav a {
+  display: block;
+  color: #cfcfcf;
+  text-decoration: none;
+  padding: 11px 14px;
+  border-radius: 10px;
+  margin-bottom: 4px;
+  font-size: 15px;
+}
+
+.dash-nav a:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.dash-nav a.activo {
+  background: var(--echo-azul);
+  color: #fff;
+  font-weight: 400;
+}
+
+.dash-main {
+  padding: 32px 40px;
+}
+
+.dash-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.chip-rol {
+  background: var(--echo-celeste);
+  color: var(--echo-negro);
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  margin-left: 10px;
+}
+
+.btn-salir {
+  background: transparent;
+  border: 1px solid #e2e0dc;
+  border-radius: 10px;
+  padding: 8px 16px;
+}
+
+.tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 18px;
+}
+
+.tarjeta {
+  background: #fff;
+  border-radius: var(--radio);
+  padding: 22px;
+  box-shadow: var(--sombra);
+}
+
+.tarjeta h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.tarjeta p {
+  margin: 0;
+  color: var(--echo-gris);
+  font-size: 14px;
+}
+
+/* --- Tablas, búsqueda y badges --- */
+.muted {
+  color: var(--echo-gris);
+  font-size: 13px;
+}
+
+.barra-busqueda {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.barra-busqueda input {
+  flex: 1;
+  padding: 11px 14px;
+  border: 1px solid #e2e0dc;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 15px;
+}
+
+.btn-secundario {
+  background: #fff;
+  border: 1px solid #e2e0dc;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-family: inherit;
+}
+
+.tabla-wrap {
+  background: #fff;
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  overflow: hidden;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tabla thead th {
+  background: var(--echo-azul);
+  color: #fff;
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 400;
+}
+
+.tabla tbody td {
+  padding: 12px 16px;
+  border-top: 1px solid #f0eeea;
+  vertical-align: top;
+}
+
+.tabla tbody tr:hover {
+  background: #fafaf8;
+}
+
+.badge-sede {
+  display: inline-block;
+  background: var(--echo-celeste);
+  color: var(--echo-negro);
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  margin: 2px 4px 2px 0;
+}
+
+/* --- Modal --- */
+.modal-fondo {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 8, 8, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 50;
+}
+
+.modal {
+  background: #fff;
+  border-radius: var(--radio);
+  padding: 28px;
+  width: 100%;
+  max-width: 620px;
+  box-shadow: 0 20px 60px rgba(9, 8, 8, 0.25);
+}
+
+.modal h2 {
+  margin: 0 0 20px;
+  font-size: 24px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* Selects con el mismo estilo que los inputs */
+.campo select,
+.linea-item select {
+  font-family: inherit;
+  padding: 12px 14px;
+  border: 1px solid #e2e0dc;
+  border-radius: 10px;
+  font-size: 15px;
+  background: #fff;
+}
+
+/* Líneas de ítems en la remisión de compra */
+.linea-item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.linea-item select {
+  flex: 1;
+  padding: 9px 12px;
+}
+
+.linea-item input {
+  padding: 9px 10px;
+  border: 1px solid #e2e0dc;
+  border-radius: 10px;
+  font-family: inherit;
+}
+
+.btn-quitar {
+  background: var(--echo-coral);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.total-neto {
+  text-align: right;
+  font-size: 18px;
+  color: var(--echo-azul);
+  margin: 14px 0 4px;
+}
+
+.alerta-ok {
+  background: rgba(77, 226, 229, 0.18);
+  color: #0d7a8c;
+  border: 1px solid rgba(15, 166, 209, 0.4);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+/* --- Pestañas (tabs) --- */
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid #e2e0dc;
+  margin-bottom: 22px;
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 10px 18px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--echo-gris);
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--echo-negro);
+}
+
+.tab.activo {
+  color: var(--echo-azul);
+  border-bottom-color: var(--echo-azul);
+  font-weight: 400;
+}
+
+/* ==========================================================================
+   Artículos: miniatura en la tabla y vista previa en el modal
+   ========================================================================== */
+.miniatura-articulo {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #e2e0dc;
+  background: #fff;
+  flex: 0 0 auto;
+}
+.previa-articulo {
+  max-width: 160px;
+  max-height: 160px;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid #e2e0dc;
+  background: #fff;
+  padding: 6px;
+}
+
+/* ==========================================================================
+   Responsive: tablet y móvil
+   En escritorio el menú lateral siempre está visible. En móvil se oculta y
+   aparece un botón hamburguesa que lo despliega como panel deslizable.
+   ========================================================================== */
+
+/* Las tablas siempre pueden desplazarse en horizontal si no caben */
+.tabla-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* En escritorio la barra móvil, el botón y la capa oscura están ocultos */
+.dash-movil-bar,
+.btn-menu,
+.dash-overlay {
+  display: none;
+}
+
+/* Tablet y móvil (≤ 980px): menú lateral deslizable con botón hamburguesa */
+@media (max-width: 980px) {
+  .login-pantalla {
+    grid-template-columns: 1fr;
+  }
+  .login-marca {
+    padding: 40px;
+  }
+
+  /* El panel ocupa una sola columna; el sidebar se saca del flujo */
+  .dash {
+    display: block;
+    min-height: 100vh;
+  }
+
+  /* Barra superior fija con el botón de menú y el logo */
+  .dash-movil-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--echo-negro);
+    color: #fff;
+    padding: 12px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+  .dash-movil-logo {
+    font-size: 20px;
+    font-weight: 500;
+  }
+  .dash-movil-logo span {
+    color: var(--echo-turquesa);
+    font-weight: 200;
+  }
+
+  /* Botón hamburguesa (tres barras) */
+  .btn-menu {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+  .btn-menu span {
+    display: block;
+    height: 2px;
+    width: 100%;
+    background: #fff;
+    border-radius: 2px;
+    transition: transform 0.25s, opacity 0.2s;
+  }
+  /* Anima el icono a una "X" cuando el menú está abierto */
+  .menu-abierto .btn-menu span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+  .menu-abierto .btn-menu span:nth-child(2) {
+    opacity: 0;
+  }
+  .menu-abierto .btn-menu span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  /* Sidebar como panel deslizable desde la izquierda */
+  .dash-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 250px;
+    max-width: 80%;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+    z-index: 50;
+  }
+  .menu-abierto .dash-sidebar {
+    transform: translateX(0);
+  }
+
+  /* Capa oscura tras el panel abierto */
+  .dash-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(9, 8, 8, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+    z-index: 40;
+  }
+  .menu-abierto .dash-overlay {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .dash-main {
+    padding: 20px 16px;
+  }
+
+  /* La barra superior de cada página se apila */
+  .dash-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  /* Las rejillas de dos columnas se apilan */
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  /* El buscador y sus controles se apilan */
+  .barra-busqueda {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Los modales aprovechan casi todo el ancho disponible */
+  .modal {
+    padding: 20px;
+    max-width: 100%;
+  }
+}
+
+/* ==========================================================================
+   Remisiones de venta: badges, buscador de cliente y comisiones
+   ========================================================================== */
+/* Badge para distinguir cliente nuevo (comisión 4%) de recompra (1%) */
+.badge-nuevo {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: rgba(15, 166, 209, 0.15);
+  color: var(--echo-azul);
+  font-weight: 400;
+}
+
+/* Buscador de cliente dentro del modal de remisión */
+.cliente-elegido {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--echo-celeste);
+  border-radius: 10px;
+  background: rgba(148, 214, 234, 0.12);
+}
+.lista-opciones {
+  margin-top: 4px;
+  border: 1px solid #e4e0db;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.lista-opciones .opcion {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 14px;
+  border: none;
+  border-bottom: 1px solid #f0ede9;
+  background: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+}
+.lista-opciones .opcion:last-child {
+  border-bottom: none;
+}
+.lista-opciones .opcion:hover {
+  background: var(--echo-hueso);
+}
+
+/* ==========================================================================
+   Documento imprimible de la remisión (replica el PDF MED-9480)
+   ========================================================================== */
+.remision-print {
+  background: #fff;
+  color: #000;
+  font-size: 12px;
+  line-height: 1.35;
+  padding: 8px;
+}
+.remision-print table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.rp-cab {
+  display: grid;
+  grid-template-columns: 120px 1fr 200px;
+  gap: 12px;
+  align-items: start;
+  padding-bottom: 10px;
+}
+.rp-logo {
+  font-weight: 600;
+  font-size: 26px;
+  color: var(--echo-azul);
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+.rp-logo span {
+  font-size: 10px;
+  color: var(--echo-gris);
+  font-weight: 300;
+}
+.rp-emisor {
+  text-align: center;
+}
+.rp-emisor h1 {
+  font-size: 18px;
+  font-style: italic;
+  margin: 0;
+}
+.rp-emisor .rp-rep {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.rp-doc {
+  text-align: right;
+  font-size: 11px;
+}
+.rp-titulo {
+  font-weight: 600;
+}
+.rp-num {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.rp-cliente td {
+  border: 1px solid #000;
+  padding: 3px 6px;
+}
+.rp-items {
+  margin-top: 10px;
+}
+.rp-items th,
+.rp-items td {
+  border-bottom: 1px solid #ccc;
+  padding: 4px 6px;
+  text-align: center;
+}
+.rp-items thead th {
+  border-bottom: 2px solid #000;
+  font-size: 11px;
+}
+.rp-totalitems {
+  text-align: center;
+  font-weight: 600;
+  padding: 6px 0;
+}
+.rp-pago td {
+  border: 1px solid #000;
+  padding: 6px 8px;
+  vertical-align: top;
+  font-size: 11px;
+}
+.rp-pago-izq {
+  width: 45%;
+}
+.rp-pago-med {
+  text-align: center;
+  width: 30%;
+}
+.rp-pago-tot {
+  text-align: right;
+  width: 25%;
+}
+.rp-tot-final {
+  margin-top: 4px;
+  font-size: 13px;
+}
+.rp-garantia {
+  text-align: center;
+  font-style: italic;
+  padding: 10px 0;
+}
+.rp-firmas td {
+  border: 1px solid #000;
+  padding: 10px 8px;
+  text-align: center;
+  vertical-align: bottom;
+  font-size: 11px;
+  width: 33%;
+}
+.rp-firma-linea {
+  margin-bottom: 2px;
+  letter-spacing: 1px;
+}
+.rp-recibi {
+  text-align: left;
+  margin-bottom: 24px;
+}
+
+/* Al imprimir: ocultar TODO menos el documento de la remisión */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .remision-print,
+  .remision-print * {
+    visibility: visible;
+  }
+  .remision-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 0;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

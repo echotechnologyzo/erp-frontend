@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Echo Tecnología · Vista previa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Vista previa estática (sin React) para revisar el diseño de marca.
+         Reproduce la pantalla de login y el panel principal de Echo Tecnología. */
+      :root {
+        --echo-azul: #0fa6d1;
+        --echo-turquesa: #4de2e5;
+        --echo-celeste: #94d6ea;
+        --echo-gris: #959595;
+        --echo-hueso: #f7f5f2;
+        --echo-negro: #090808;
+        --echo-coral: #ff5757;
+        --sombra: 0 10px 30px rgba(9, 8, 8, 0.08);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Kanit", system-ui, sans-serif;
+        font-weight: 300;
+        background: var(--echo-hueso);
+        color: var(--echo-negro);
+      }
+      h1, h2, h3 { font-weight: 300; }
+      .nota {
+        background: var(--echo-negro);
+        color: #fff;
+        text-align: center;
+        padding: 8px;
+        font-size: 13px;
+        font-weight: 200;
+      }
+      .nota b { color: var(--echo-turquesa); font-weight: 400; }
+
+      /* ----- LOGIN ----- */
+      .login { display: grid; grid-template-columns: 1fr 1fr; min-height: 560px; }
+      .login-marca {
+        background: linear-gradient(135deg, var(--echo-azul) 0%, var(--echo-turquesa) 100%);
+        color: #fff; display: flex; flex-direction: column; justify-content: center; padding: 56px;
+      }
+      .login-marca .logo { font-size: 44px; font-weight: 500; margin: 0; }
+      .login-marca .logo span { font-weight: 200; }
+      .login-marca .lema { margin-top: 16px; font-size: 19px; font-weight: 200; max-width: 380px; opacity: .95; }
+      .login-form { display: flex; align-items: center; justify-content: center; padding: 32px; }
+      .card { width: 100%; max-width: 360px; }
+      .card h2 { font-size: 28px; margin: 0 0 4px; }
+      .card .sub { color: var(--echo-gris); margin: 0 0 28px; }
+      .campo { margin-bottom: 18px; display: flex; flex-direction: column; }
+      .campo label { font-size: 14px; margin-bottom: 6px; color: var(--echo-gris); }
+      .campo input {
+        font-family: inherit; padding: 12px 14px; border: 1px solid #e2e0dc;
+        border-radius: 10px; font-size: 15px; outline: none;
+      }
+      .campo input:focus { border-color: var(--echo-azul); }
+      .btn {
+        width: 100%; padding: 13px; border: none; border-radius: 10px;
+        background: var(--echo-azul); color: #fff; font-size: 16px; font-family: inherit;
+      }
+
+      /* ----- DASHBOARD ----- */
+      .dash { display: grid; grid-template-columns: 240px 1fr; min-height: 520px; margin-top: 28px; }
+      .side { background: var(--echo-negro); color: #fff; padding: 26px 20px; }
+      .side .logo { font-size: 22px; font-weight: 500; margin: 0 0 32px; }
+      .side .logo span { color: var(--echo-turquesa); font-weight: 200; }
+      .side a {
+        display: block; color: #cfcfcf; text-decoration: none; padding: 11px 14px;
+        border-radius: 10px; margin-bottom: 4px; font-size: 15px;
+      }
+      .side a.activo { background: rgba(255,255,255,.1); color: #fff; }
+      .main { padding: 30px 38px; }
+      .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 26px; }
+      .chip { background: var(--echo-celeste); color: var(--echo-negro); padding: 4px 12px; border-radius: 999px; font-size: 13px; margin-left: 10px; }
+      .salir { background: transparent; border: 1px solid #e2e0dc; border-radius: 10px; padding: 8px 16px; font-family: inherit; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+      .t { background: #fff; border-radius: 14px; padding: 20px; box-shadow: var(--sombra); }
+      .t h3 { margin: 0 0 6px; font-size: 16px; }
+      .t p { margin: 0; color: var(--echo-gris); font-size: 14px; }
+      .t .fase { margin-top: 8px; color: var(--echo-azul); }
+
+      .seccion-titulo { padding: 22px 38px 0; color: var(--echo-gris); font-weight: 300; }
+
+      /* Paleta */
+      .paleta { display: flex; gap: 10px; padding: 16px 38px 28px; flex-wrap: wrap; }
+      .swatch { width: 92px; }
+      .swatch .box { height: 56px; border-radius: 10px; box-shadow: var(--sombra); }
+      .swatch small { display: block; margin-top: 6px; font-size: 11px; color: var(--echo-gris); }
+
+      /* Badge de sede / tipo de movimiento en las tablas de inventario */
+      .bsede {
+        display: inline-block; background: var(--echo-celeste); color: var(--echo-negro);
+        padding: 2px 10px; border-radius: 999px; font-size: 12px; margin: 2px 4px 2px 0;
+      }
+
+      /* Pestañas del módulo de inventario */
+      .tabs { display: flex; gap: 4px; border-bottom: 1px solid #e2e0dc; margin-bottom: 18px; }
+      .tab {
+        background: transparent; border: none; border-bottom: 2px solid transparent;
+        padding: 10px 18px; font-family: inherit; font-size: 15px; color: var(--echo-gris); margin-bottom: -1px;
+      }
+      .tab.activo { color: var(--echo-azul); border-bottom-color: var(--echo-azul); }
+
+      /* Tarjeta de formulario / modal de la vista previa */
+      .panel { background:#fff; border-radius:14px; box-shadow:var(--sombra); padding:24px; }
+      .g2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+      .panel label { font-size:14px; color:var(--echo-gris); display:block; margin-bottom:6px; }
+      .panel input, .panel select {
+        width:100%; font-family:inherit; padding:11px 13px; border:1px solid #e2e0dc;
+        border-radius:10px; font-size:15px; background:#fff;
+      }
+      .linea { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+      .linea select { flex:1; }
+      .quitar { background:var(--echo-coral); color:#fff; border:none; border-radius:8px; width:32px; height:32px; font-size:18px; }
+      .acciones { display:flex; justify-content:flex-end; gap:12px; margin-top:16px; }
+      th.cabneg { background:var(--echo-negro)!important; }
+
+      /* ----- RESPONSIVE (móvil / tablet) ----- */
+      /* Barra móvil, botón y capa oscura ocultos en escritorio */
+      .movil-bar, .hamb, .overlay { display: none; }
+
+      /* En tablet y móvil el menú lateral se oculta y aparece con el botón hamburguesa */
+      @media (max-width: 980px) {
+        .dash { display: block; }
+
+        /* Barra superior con hamburguesa + logo */
+        .movil-bar {
+          display: flex; align-items: center; gap: 14px;
+          background: var(--echo-negro); color: #fff; padding: 12px 16px;
+          position: sticky; top: 0; z-index: 30;
+        }
+        .movil-logo { font-size: 20px; font-weight: 500; }
+        .movil-logo span { color: var(--echo-turquesa); font-weight: 200; }
+        .hamb {
+          display: flex; flex-direction: column; justify-content: center; gap: 5px;
+          width: 40px; height: 40px; padding: 8px; background: transparent; border: none;
+        }
+        .hamb span { display: block; height: 2px; width: 100%; background: #fff; border-radius: 2px; transition: transform .25s, opacity .2s; }
+        .dash.abierto .hamb span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .dash.abierto .hamb span:nth-child(2) { opacity: 0; }
+        .dash.abierto .hamb span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+        /* Sidebar deslizable desde la izquierda */
+        .side {
+          position: fixed; top: 0; left: 0; bottom: 0; width: 250px; max-width: 80%;
+          overflow-y: auto; transform: translateX(-100%); transition: transform .28s ease; z-index: 50;
+          padding: 14px 14px 0;
+        }
+        .side .logo { margin: 0 0 12px; }
+        .dash.abierto .side { transform: translateX(0); }
+
+        /* Capa oscura */
+        .overlay {
+          position: fixed; inset: 0; background: rgba(9,8,8,.5);
+          opacity: 0; pointer-events: none; transition: opacity .28s ease; z-index: 40;
+        }
+        .dash.abierto .overlay { display: block; opacity: 1; pointer-events: auto; }
+
+        .main { padding: 20px 16px; }
+        .top { flex-direction: column; align-items: flex-start; gap: 12px; }
+        .grid { grid-template-columns: 1fr; }
+        .seccion-titulo { padding: 18px 16px 0; }
+        .paleta { padding: 14px 16px 24px; }
+        /* Las tablas se desplazan en horizontal en vez de cortarse */
+        table { display: block; overflow-x: auto; white-space: nowrap; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="nota">
+      Vista previa estática del diseño · <b>Echo Tecnología ERP</b> · (la app real en React se ve igual al ejecutar <b>npm run dev</b>)
+    </div>
+
+    <!-- ===== LOGIN ===== -->
+    <section class="login">
+      <div class="login-marca">
+        <h1 class="logo">Echo<span> Tecnología</span></h1>
+        <p class="lema">
+          Tecnología que protege y conecta tu hogar. Sistema de gestión interno:
+          inventario, clientes y remisiones.
+        </p>
+      </div>
+      <div class="login-form">
+        <div class="card">
+          <h2>Iniciar sesión</h2>
+          <p class="sub">Ingresa tus credenciales para continuar.</p>
+          <div class="campo">
+            <label>Correo electrónico</label>
+            <input type="email" placeholder="usuario@empresa.com" />
+          </div>
+          <div class="campo">
+            <label>Contraseña</label>
+            <input type="password" placeholder="••••••••" />
+          </div>
+          <button class="btn">Ingresar</button>
+        </div>
+      </div>
+    </section>
+
+    <p class="seccion-titulo">↓ Así se ve el panel principal después de iniciar sesión</p>
+
+    <!-- ===== DASHBOARD ===== -->
+    <section class="dash" id="dash">
+      <!-- Barra móvil con botón hamburguesa (solo visible en pantallas pequeñas) -->
+      <header class="movil-bar">
+        <button class="hamb" aria-label="Abrir menú" onclick="document.getElementById('dash').classList.toggle('abierto')">
+          <span></span><span></span><span></span>
+        </button>
+        <span class="movil-logo">Echo<span>·ERP</span></span>
+      </header>
+      <!-- Capa oscura: al tocarla se cierra el menú -->
+      <div class="overlay" onclick="document.getElementById('dash').classList.remove('abierto')"></div>
+      <aside class="side" onclick="if(event.target.tagName==='A') document.getElementById('dash').classList.remove('abierto')">
+        <h1 class="logo">Echo<span>·ERP</span></h1>
+        <nav>
+          <a class="activo" href="#">Inicio</a>
+          <a href="#">Artículos</a>
+          <a href="#">Inventario</a>
+          <a href="#">Compras</a>
+          <a href="#">Proveedores</a>
+          <a href="#">Clientes</a>
+          <a href="#">Empleados</a>
+          <a href="#">Remisiones</a>
+          <a href="#">Usuarios</a>
+          <a href="#">Comisiones</a>
+          <a href="#">Reportes</a>
+        </nav>
+      </aside>
+      <main class="main">
+        <div class="top">
+          <h2>Hola, Administrador General <span class="chip">ADMIN</span></h2>
+          <button class="salir">Cerrar sesión</button>
+        </div>
+        <div class="grid">
+          <div class="t"><h3>Artículos</h3><p>Crear y editar productos.</p><p class="fase">Disponible</p></div>
+          <div class="t"><h3>Inventario</h3><p>Existencias, ajustes y traslados.</p><p class="fase">Disponible</p></div>
+          <div class="t"><h3>Compras</h3><p>Remisiones de compra + Excel.</p><p class="fase">Disponible</p></div>
+          <div class="t"><h3>Proveedores</h3><p>Directorio de proveedores.</p><p class="fase">Disponible</p></div>
+          <div class="t"><h3>Clientes</h3><p>Directorio + importar/exportar.</p><p class="fase">Disponible</p></div>
+          <div class="t"><h3>Empleados</h3><p>Personal por sede.</p><p class="fase">Disponible</p></div>
+          <div class="t"><h3>Remisiones</h3><p>Ventas, garantía e impresión PDF.</p><p class="fase">Disponible</p></div>
+          <div class="t"><h3>Usuarios</h3><p>Crear y administrar usuarios.</p><p class="fase">Disponible</p></div>
+          <div class="t"><h3>Comisiones</h3><p>Pago a vendedoras (4% / 1%).</p><p class="fase">Disponible</p></div>
+          <div class="t"><h3>Reportes</h3><p>Ventas, utilidades, top productos.</p><p class="fase">Fase 5</p></div>
+        </div>
+      </main>
+    </section>
+
+    <p class="seccion-titulo">↓ Módulo de Inventario · Artículos (con stock por sede)</p>
+    <section style="padding: 0 38px 10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap;">
+        <h2 style="margin:0;">Artículos</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="salir">Plantilla Excel</button>
+          <button class="salir">Importar Excel (Effi)</button>
+          <button class="btn" style="width:auto;padding:10px 18px;">+ Nuevo artículo</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;">
+        <input style="flex:1;padding:11px 14px;border:1px solid #e2e0dc;border-radius:10px;font-family:inherit;" placeholder="Buscar por nombre o código…" />
+        <button class="salir">Buscar</button>
+      </div>
+      <div style="background:#fff;border-radius:14px;box-shadow:var(--sombra);overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <thead>
+            <tr style="background:var(--echo-azul);color:#fff;text-align:left;">
+              <th style="padding:12px 16px;font-weight:400;">Código</th>
+              <th style="padding:12px 16px;font-weight:400;">Artículo</th>
+              <th style="padding:12px 16px;font-weight:400;">Categoría</th>
+              <th style="padding:12px 16px;font-weight:400;">Tarifa normal</th>
+              <th style="padding:12px 16px;font-weight:400;">Stock por sede</th>
+              <th style="padding:12px 16px;font-weight:400;">Total</th>
+              <th style="padding:12px 16px;font-weight:400;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-top:1px solid #f0eeea;">
+              <td style="padding:12px 16px;">35</td>
+              <td style="padding:12px 16px;"><strong>Fire TV Stick 4K</strong><div style="color:var(--echo-gris);font-size:13px;">Amazon</div></td>
+              <td style="padding:12px 16px;">Tecnología</td>
+              <td style="padding:12px 16px;">$170.000</td>
+              <td style="padding:12px 16px;"><span class="bsede">Bogotá: 8</span><span class="bsede">Medellín: 5</span></td>
+              <td style="padding:12px 16px;"><strong>13</strong></td>
+              <td style="padding:12px 16px;"><button class="salir" style="padding:6px 12px;">Editar</button></td>
+            </tr>
+            <tr style="border-top:1px solid #f0eeea;">
+              <td style="padding:12px 16px;">53</td>
+              <td style="padding:12px 16px;"><strong>ONN Google TV 4K</strong><div style="color:var(--echo-gris);font-size:13px;">ONN</div></td>
+              <td style="padding:12px 16px;">Tecnología</td>
+              <td style="padding:12px 16px;">$140.000</td>
+              <td style="padding:12px 16px;"><span class="bsede">Bogotá: 36</span><span class="bsede">Medellín: 12</span></td>
+              <td style="padding:12px 16px;"><strong>48</strong></td>
+              <td style="padding:12px 16px;"><button class="salir" style="padding:6px 12px;">Editar</button></td>
+            </tr>
+            <tr style="border-top:1px solid #f0eeea;">
+              <td style="padding:12px 16px;">75</td>
+              <td style="padding:12px 16px;"><strong>ONN Google TV HD</strong><div style="color:var(--echo-gris);font-size:13px;">ONN</div></td>
+              <td style="padding:12px 16px;">Tecnología</td>
+              <td style="padding:12px 16px;">$110.000</td>
+              <td style="padding:12px 16px;"><span class="bsede">Bogotá: 10</span><span class="bsede">Medellín: 7</span></td>
+              <td style="padding:12px 16px;"><strong>17</strong></td>
+              <td style="padding:12px 16px;"><button class="salir" style="padding:6px 12px;">Editar</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <p class="seccion-titulo">↓ Módulo de Inventario · pestaña <b style="color:var(--echo-azul)">Existencias</b> (stock y costo promedio por sede)</p>
+    <section style="padding: 0 38px 10px;">
+      <h2 style="margin:0 0 14px;">Inventario</h2>
+      <div class="tabs">
+        <button class="tab activo">Existencias</button>
+        <button class="tab">Traslados</button>
+        <button class="tab">Trazabilidad</button>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;">
+        <select style="max-width:200px;padding:11px 13px;border:1px solid #e2e0dc;border-radius:10px;font-family:inherit;">
+          <option>Todas las sedes</option><option>Bogotá</option><option>Medellín</option>
+        </select>
+        <input style="flex:1;padding:11px 14px;border:1px solid #e2e0dc;border-radius:10px;font-family:inherit;" placeholder="Buscar por nombre o código…" />
+        <button class="salir">Buscar</button>
+      </div>
+      <div style="background:#fff;border-radius:14px;box-shadow:var(--sombra);overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <thead>
+            <tr style="background:var(--echo-azul);color:#fff;text-align:left;">
+              <th style="padding:12px 16px;font-weight:400;">Código</th>
+              <th style="padding:12px 16px;font-weight:400;">Artículo</th>
+              <th style="padding:12px 16px;font-weight:400;">Sede</th>
+              <th style="padding:12px 16px;font-weight:400;">Cantidad</th>
+              <th style="padding:12px 16px;font-weight:400;">Costo promedio</th>
+              <th style="padding:12px 16px;font-weight:400;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-top:1px solid #f0eeea;">
+              <td style="padding:12px 16px;">35</td>
+              <td style="padding:12px 16px;"><strong>Fire TV Stick 4K</strong></td>
+              <td style="padding:12px 16px;"><span class="bsede">Bogotá</span></td>
+              <td style="padding:12px 16px;"><strong>8</strong></td>
+              <td style="padding:12px 16px;">$110.000</td>
+              <td style="padding:12px 16px;"><button class="salir" style="padding:6px 12px;">Ajustar</button></td>
+            </tr>
+            <tr style="border-top:1px solid #f0eeea;">
+              <td style="padding:12px 16px;">53</td>
+              <td style="padding:12px 16px;"><strong>ONN Google TV 4K</strong></td>
+              <td style="padding:12px 16px;"><span class="bsede">Medellín</span></td>
+              <td style="padding:12px 16px;"><strong>2</strong> <span style="color:var(--echo-coral);font-size:13px;">· bajo</span></td>
+              <td style="padding:12px 16px;">$95.000</td>
+              <td style="padding:12px 16px;"><button class="salir" style="padding:6px 12px;">Ajustar</button></td>
+            </tr>
+            <tr style="border-top:1px solid #f0eeea;">
+              <td style="padding:12px 16px;">75</td>
+              <td style="padding:12px 16px;"><strong>ONN Google TV HD</strong></td>
+              <td style="padding:12px 16px;"><span class="bsede">Bogotá</span></td>
+              <td style="padding:12px 16px;"><strong>10</strong></td>
+              <td style="padding:12px 16px;">$78.000</td>
+              <td style="padding:12px 16px;"><button class="salir" style="padding:6px 12px;">Ajustar</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <p class="seccion-titulo">↓ Modal de <b style="color:var(--echo-azul)">Ajuste</b> (entrada/salida manual; en entradas recalcula el costo promedio)</p>
+    <section style="padding: 0 38px 10px; max-width:560px;">
+      <div class="panel">
+        <h3 style="margin:0 0 4px;">Ajustar existencias</h3>
+        <p style="color:var(--echo-gris);font-size:13px;margin:0 0 16px;">35 · Fire TV Stick 4K — Bogotá · stock actual: <strong>8</strong></p>
+        <div class="g2" style="margin-bottom:16px;">
+          <div><label>Tipo de ajuste</label>
+            <select><option>Entrada (sumar)</option><option>Salida (restar)</option></select>
+          </div>
+          <div><label>Cantidad</label><input type="number" value="5" /></div>
+        </div>
+        <div style="margin-bottom:16px;"><label>Costo unitario (recalcula el costo promedio)</label><input type="number" value="110000" /></div>
+        <div><label>Observación</label><input placeholder="Motivo del ajuste" /></div>
+        <div class="acciones">
+          <button class="salir">Cancelar</button>
+          <button class="btn" style="width:auto;padding:11px 18px;">Aplicar ajuste</button>
+        </div>
+      </div>
+    </section>
+
+    <p class="seccion-titulo">↓ Módulo de Inventario · pestaña <b style="color:var(--echo-azul)">Traslados</b> (mover artículos entre sedes)</p>
+    <section style="padding: 0 38px 10px;">
+      <div class="tabs">
+        <button class="tab">Existencias</button>
+        <button class="tab activo">Traslados</button>
+        <button class="tab">Trazabilidad</button>
+      </div>
+      <div class="panel">
+        <div class="g2">
+          <div><label>Sede de origen</label>
+            <select><option>Bogotá</option><option>Medellín</option></select>
+          </div>
+          <div><label>Sede de destino</label>
+            <select><option>Medellín</option><option>Bogotá</option></select>
+          </div>
+        </div>
+        <h3 style="margin:16px 0 10px;">Artículos a trasladar</h3>
+        <div class="linea">
+          <select><option>35 · Fire TV Stick 4K</option></select>
+          <input type="number" value="3" style="width:90px;" />
+          <button class="quitar">×</button>
+        </div>
+        <div class="linea">
+          <select><option>53 · ONN Google TV 4K</option></select>
+          <input type="number" value="2" style="width:90px;" />
+          <button class="quitar">×</button>
+        </div>
+        <button class="salir">+ Agregar artículo</button>
+        <div style="margin-top:16px;"><label>Observación</label><input placeholder="Motivo del traslado" /></div>
+        <div class="acciones">
+          <button class="btn" style="width:auto;padding:11px 18px;">Registrar traslado</button>
+        </div>
+      </div>
+      <p style="color:var(--echo-gris);font-size:13px;">El traslado genera una salida en la sede de origen y una entrada en la de destino; el costo promedio viaja con la mercancía.</p>
+    </section>
+
+    <p class="seccion-titulo">↓ Módulo de Inventario · pestaña <b style="color:var(--echo-azul)">Trazabilidad</b> (kardex de movimientos)</p>
+    <section style="padding: 0 38px 20px;">
+      <div class="tabs">
+        <button class="tab">Existencias</button>
+        <button class="tab">Traslados</button>
+        <button class="tab activo">Trazabilidad</button>
+      </div>
+      <div style="background:#fff;border-radius:14px;box-shadow:var(--sombra);overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <thead>
+            <tr style="background:var(--echo-negro);color:#fff;text-align:left;">
+              <th style="padding:12px 16px;font-weight:400;">Fecha</th>
+              <th style="padding:12px 16px;font-weight:400;">Artículo</th>
+              <th style="padding:12px 16px;font-weight:400;">Movimiento</th>
+              <th style="padding:12px 16px;font-weight:400;">Sede</th>
+              <th style="padding:12px 16px;font-weight:400;">Cantidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-top:1px solid #f0eeea;"><td style="padding:12px 16px;">2026-05-30 10:00</td><td style="padding:12px 16px;">35 · Fire TV Stick 4K</td><td style="padding:12px 16px;"><span class="bsede" style="background:#ffd9d9;">VENTA_REMISION</span></td><td style="padding:12px 16px;">Bogotá</td><td style="padding:12px 16px;color:var(--echo-coral);">-1</td></tr>
+            <tr style="border-top:1px solid #f0eeea;"><td style="padding:12px 16px;">2026-05-29 09:27</td><td style="padding:12px 16px;">137 · Echo Dot Max Morado</td><td style="padding:12px 16px;"><span class="bsede">TRASLADO_ENTRADA</span></td><td style="padding:12px 16px;">Bogotá</td><td style="padding:12px 16px;color:#1e9e57;">+1</td></tr>
+            <tr style="border-top:1px solid #f0eeea;"><td style="padding:12px 16px;">2026-05-29 09:27</td><td style="padding:12px 16px;">137 · Echo Dot Max Morado</td><td style="padding:12px 16px;"><span class="bsede">TRASLADO_SALIDA</span></td><td style="padding:12px 16px;">Medellín</td><td style="padding:12px 16px;color:var(--echo-coral);">-1</td></tr>
+            <tr style="border-top:1px solid #f0eeea;"><td style="padding:12px 16px;">2026-05-16 16:51</td><td style="padding:12px 16px;">75 · ONN Google TV HD</td><td style="padding:12px 16px;"><span class="bsede" style="background:#d6f5e2;">AJUSTE</span></td><td style="padding:12px 16px;">Bogotá</td><td style="padding:12px 16px;color:#1e9e57;">+5</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <p class="seccion-titulo">↓ Módulo de Compras · Remisiones de compra (suma stock y actualiza costos)</p>
+    <section style="padding: 0 38px 10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="margin:0;">Remisiones de compra</h2>
+        <div style="display:flex;gap:10px;">
+          <button class="salir">Descargar plantilla Excel</button>
+          <button class="salir">Importar Excel</button>
+          <button class="btn" style="width:auto;padding:10px 18px;">+ Crear remisión</button>
+        </div>
+      </div>
+      <div style="background:#fff;border-radius:14px;box-shadow:var(--sombra);overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <thead>
+            <tr style="background:var(--echo-azul);color:#fff;text-align:left;">
+              <th style="padding:12px 16px;font-weight:400;">Fecha</th>
+              <th style="padding:12px 16px;font-weight:400;">ID</th>
+              <th style="padding:12px 16px;font-weight:400;">Sede</th>
+              <th style="padding:12px 16px;font-weight:400;">Proveedor</th>
+              <th style="padding:12px 16px;font-weight:400;">Remisión prov.</th>
+              <th style="padding:12px 16px;font-weight:400;">Total</th>
+              <th style="padding:12px 16px;font-weight:400;">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-top:1px solid #f0eeea;">
+              <td style="padding:12px 16px;">2026-05-28 10:54</td>
+              <td style="padding:12px 16px;"><strong>MED-1274</strong></td>
+              <td style="padding:12px 16px;">Medellín</td>
+              <td style="padding:12px 16px;">AMAZON.COM SALES, INC<div style="color:var(--echo-gris);font-size:13px;">NIT: 912000471</div></td>
+              <td style="padding:12px 16px;">20/26/05/2026</td>
+              <td style="padding:12px 16px;">$17.825.000</td>
+              <td style="padding:12px 16px;"><span class="bsede">Pago total</span></td>
+            </tr>
+            <tr style="border-top:1px solid #f0eeea;">
+              <td style="padding:12px 16px;">2026-05-20 14:53</td>
+              <td style="padding:12px 16px;"><strong>BOG-574</strong></td>
+              <td style="padding:12px 16px;">Bogotá</td>
+              <td style="padding:12px 16px;">AMAZON.COM SALES, INC<div style="color:var(--echo-gris);font-size:13px;">NIT: 912000471</div></td>
+              <td style="padding:12px 16px;">20/05/2026</td>
+              <td style="padding:12px 16px;">$6.737.000</td>
+              <td style="padding:12px 16px;"><span class="bsede">Pago total</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="color:var(--echo-gris);font-size:13px;">Al crear o importar una remisión: entra stock a la sede, se recalcula el costo promedio y se actualiza el costo del artículo. Moneda COP · Pago de contado.</p>
+    </section>
+
+    <p class="seccion-titulo">↓ Módulo de <b style="color:var(--echo-azul)">Clientes</b> (importa de Effi y exporta a Google Contacts)</p>
+    <section style="padding: 0 38px 20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <h2 style="margin:0;">Clientes <span style="color:var(--echo-gris);font-size:15px;">· 8.765 registros</span></h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="salir">Exportar a Excel</button>
+          <button class="salir">Exportar a Google Contacts</button>
+          <button class="salir">Importar Excel (Effi)</button>
+          <button class="btn" style="width:auto;padding:10px 18px;">+ Crear cliente</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;">
+        <input style="flex:1;padding:11px 14px;border:1px solid #e2e0dc;border-radius:10px;font-family:inherit;" placeholder="Buscar por nombre, documento, email o celular…" />
+        <button class="salir">Buscar</button>
+      </div>
+      <div style="background:#fff;border-radius:14px;box-shadow:var(--sombra);overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <thead>
+            <tr style="background:var(--echo-azul);color:#fff;text-align:left;">
+              <th style="padding:12px 16px;font-weight:400;">Documento</th>
+              <th style="padding:12px 16px;font-weight:400;">Cliente</th>
+              <th style="padding:12px 16px;font-weight:400;">Teléfono</th>
+              <th style="padding:12px 16px;font-weight:400;">Email</th>
+              <th style="padding:12px 16px;font-weight:400;">Ciudad</th>
+              <th style="padding:12px 16px;font-weight:400;">Tarifa / pago</th>
+              <th style="padding:12px 16px;font-weight:400;">Vigencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-top:1px solid #f0eeea;">
+              <td style="padding:12px 16px;">1070782596<div style="color:var(--echo-gris);font-size:13px;">Cédula de ciudadanía</div></td>
+              <td style="padding:12px 16px;"><strong>Valentina Martínez</strong></td>
+              <td style="padding:12px 16px;">3166563766</td>
+              <td style="padding:12px 16px;">vale3480@gmail.com</td>
+              <td style="padding:12px 16px;">Bogotá D.C.</td>
+              <td style="padding:12px 16px;">Tarifa normal<div style="color:var(--echo-gris);font-size:13px;">CONTADO</div></td>
+              <td style="padding:12px 16px;"><span class="bsede">Vigente</span></td>
+            </tr>
+            <tr style="border-top:1px solid #f0eeea;">
+              <td style="padding:12px 16px;">3104943302<div style="color:var(--echo-gris);font-size:13px;">Cédula de ciudadanía</div></td>
+              <td style="padding:12px 16px;"><strong>Arley Ariza</strong></td>
+              <td style="padding:12px 16px;">3104943302</td>
+              <td style="padding:12px 16px;">sacechotechnologyzo@gmail.com</td>
+              <td style="padding:12px 16px;">Bogotá D.C.</td>
+              <td style="padding:12px 16px;">Tarifa normal<div style="color:var(--echo-gris);font-size:13px;">CONTADO</div></td>
+              <td style="padding:12px 16px;"><span class="bsede">Vigente</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:center;align-items:center;gap:14px;margin-top:16px;">
+        <button class="salir">← Anterior</button>
+        <span style="color:var(--echo-gris);">Página 1 de 176</span>
+        <button class="salir">Siguiente →</button>
+      </div>
+      <p style="color:var(--echo-gris);font-size:13px;">Importar lee el Excel exportado de Effi (tabla HTML como .xls), mapea las columnas y crea en lotes de 1.000 sin duplicar. Exportar genera un Excel o un CSV compatible con Google Contactos.</p>
+    </section>
+
+    <p class="seccion-titulo">↓ Módulo de Remisiones de VENTA · comisión 4% nuevo / 1% recompra</p>
+    <section style="padding: 0 38px 10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="margin:0;">Remisiones de venta</h2>
+        <div style="display:flex;gap:10px;">
+          <button class="salir">Descargar plantilla Excel</button>
+          <button class="salir">Importar Excel</button>
+          <button class="btn" style="width:auto;padding:10px 18px;">+ Crear remisión</button>
+        </div>
+      </div>
+      <div style="background:#fff;border-radius:14px;box-shadow:var(--sombra);overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <thead>
+            <tr style="background:var(--echo-azul);color:#fff;text-align:left;">
+              <th style="padding:12px 16px;font-weight:400;">Fecha</th>
+              <th style="padding:12px 16px;font-weight:400;">No.</th>
+              <th style="padding:12px 16px;font-weight:400;">Sede</th>
+              <th style="padding:12px 16px;font-weight:400;">Cliente</th>
+              <th style="padding:12px 16px;font-weight:400;">Vendedor</th>
+              <th style="padding:12px 16px;font-weight:400;">Total</th>
+              <th style="padding:12px 16px;font-weight:400;">Comisión</th>
+              <th style="padding:12px 16px;font-weight:400;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-top:1px solid #f0eeea;">
+              <td style="padding:12px 16px;">2026-05-22</td>
+              <td style="padding:12px 16px;"><strong>MED-9480</strong></td>
+              <td style="padding:12px 16px;">Medellín</td>
+              <td style="padding:12px 16px;">Alexis Mejía<div style="color:var(--echo-gris);font-size:13px;">3113816369</div></td>
+              <td style="padding:12px 16px;">Jonathan Velásquez</td>
+              <td style="padding:12px 16px;">$633,000</td>
+              <td style="padding:12px 16px;"><span style="background:rgba(15,166,209,.15);color:var(--echo-azul);border-radius:999px;padding:2px 10px;font-size:12px;">Nuevo 4%</span><div style="color:var(--echo-gris);font-size:13px;">$25,320</div></td>
+              <td style="padding:12px 16px;"><button class="salir">Ver / PDF</button></td>
+            </tr>
+            <tr style="border-top:1px solid #f0eeea;">
+              <td style="padding:12px 16px;">2026-05-21</td>
+              <td style="padding:12px 16px;"><strong>BOG-512</strong></td>
+              <td style="padding:12px 16px;">Bogotá</td>
+              <td style="padding:12px 16px;">Valentina Martínez<div style="color:var(--echo-gris);font-size:13px;">1098765432</div></td>
+              <td style="padding:12px 16px;">Laura Gómez</td>
+              <td style="padding:12px 16px;">$410,000</td>
+              <td style="padding:12px 16px;"><span class="bsede">Recompra 1%</span><div style="color:var(--echo-gris);font-size:13px;">$4,100</div></td>
+              <td style="padding:12px 16px;"><button class="salir">Ver / PDF</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="color:var(--echo-gris);font-size:13px;">Al emitir, descuenta stock de la sede y "congela" precio, costo y garantía por línea. La comisión se calcula sola: 4% si el cliente es nuevo, 1% si ya había comprado.</p>
+    </section>
+
+    <p class="seccion-titulo">↓ Vista imprimible (Imprimir / Guardar PDF) — replica el formato MED-9480</p>
+    <section style="padding: 0 38px 18px;">
+      <div style="background:#fff;border:1px solid #ddd;border-radius:8px;box-shadow:var(--sombra);padding:18px;font-size:12px;color:#000;max-width:820px;margin:0 auto;line-height:1.35;">
+        <div style="display:grid;grid-template-columns:110px 1fr 190px;gap:12px;align-items:start;padding-bottom:10px;">
+          <div style="font-weight:600;font-size:24px;color:var(--echo-azul);line-height:1;">ECHO<br><small style="font-size:10px;color:var(--echo-gris);font-weight:300;">Tecnología en Casa</small></div>
+          <div style="text-align:center;">
+            <div style="font-size:18px;font-style:italic;font-weight:600;">ECHO TECNOLOGÍA</div>
+            <div style="font-weight:600;">YESICA ZULUAGA OSPINA</div>
+            <div><strong>NIT:</strong> 1017175943 | Régimen ordinario No responsable de IVA</div>
+            <div>Antioquia / Medellín / Carrera 55 #12Sur 09 Torre 3 Apto 9920</div>
+            <div><strong>Teléfonos:</strong> 3207548718</div>
+            <div><strong>Email:</strong> echotechnologyzo@gmail.com</div>
+            <div><strong>Página web:</strong> echotecnologia.co</div>
+          </div>
+          <div style="text-align:right;font-size:11px;">
+            <div style="font-weight:600;">REMISIÓN DE VENTA</div>
+            <div style="font-weight:600;margin-bottom:6px;">No. MED-9480</div>
+            <div><strong>Creación:</strong> 2026-05-22 15:48:38</div>
+            <div><strong>Vencimiento:</strong> 2026-05-22</div>
+            <div><strong>Página:</strong> 1 de 1</div>
+          </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr><td style="border:1px solid #000;padding:3px 6px;"><strong>Cliente:</strong> Alexis Mejía</td><td style="border:1px solid #000;padding:3px 6px;"><strong>CC:</strong> 3113816369</td></tr>
+          <tr><td colspan="2" style="border:1px solid #000;padding:3px 6px;"><strong>Teléfono:</strong> 3113816369</td></tr>
+          <tr><td colspan="2" style="border:1px solid #000;padding:3px 6px;"><strong>Dirección:</strong> . / Medellín / Antioquia / Colombia</td></tr>
+          <tr><td colspan="2" style="border:1px solid #000;padding:3px 6px;"><strong>Elaboró:</strong> Echo Tecnología (Medellín)</td></tr>
+          <tr><td colspan="2" style="border:1px solid #000;padding:3px 6px;"><strong>Vendedor:</strong> Jonathan Velásquez Catañeda</td></tr>
+        </table>
+        <table style="width:100%;border-collapse:collapse;margin-top:10px;text-align:center;">
+          <thead><tr style="border-bottom:2px solid #000;font-size:11px;">
+            <th style="padding:4px 6px;">ÍTEM</th><th style="padding:4px 6px;">REF.</th><th style="padding:4px 6px;text-align:left;">DESCRIPCIÓN</th><th style="padding:4px 6px;">CANT.</th><th style="padding:4px 6px;">PRECIO UD.</th><th style="padding:4px 6px;">DESCUENTO</th><th style="padding:4px 6px;">TOTAL NETO</th>
+          </tr></thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #ccc;"><td>1</td><td>000006</td><td style="text-align:left;">AMAZON ECHO DOT 5TH GEN NEGRO</td><td>2</td><td>$205,000</td><td>$0</td><td>$410,000</td></tr>
+            <tr style="border-bottom:1px solid #ccc;"><td>2</td><td>000005</td><td style="text-align:left;">AMAZON ECHO DOT 5TH BLANCO</td><td>1</td><td>$205,000</td><td>$0</td><td>$205,000</td></tr>
+            <tr style="border-bottom:1px solid #ccc;"><td>3</td><td>000062</td><td style="text-align:left;">Flete</td><td>1</td><td>$18,000</td><td>$0</td><td>$18,000</td></tr>
+          </tbody>
+        </table>
+        <div style="text-align:center;font-weight:600;padding:6px 0;">Total ítems: 3 - Total unidades: 4</div>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="border:1px solid #000;padding:6px 8px;vertical-align:top;width:45%;font-size:11px;"><strong>FORMA DE PAGO:</strong><br>Contado - Valor: $633,000<br><strong style="display:inline-block;margin-top:6px;">MEDIOS DE PAGO:</strong><br>Transferencia bancaria - BANCOLOMBIA Ahorros #69385143982 - Valor: $633,000</td>
+            <td style="border:1px solid #000;padding:6px 8px;text-align:center;width:30%;font-size:11px;">-No registran impuestos ni retenciones-</td>
+            <td style="border:1px solid #000;padding:6px 8px;text-align:right;width:25%;font-size:11px;"><strong>SUBTOTAL</strong> $633,000<div style="margin-top:4px;font-size:13px;"><strong>TOTAL NETO</strong> $633,000</div></td>
+          </tr>
+        </table>
+        <div style="text-align:center;font-style:italic;padding:10px 0;">¡Muchas gracias por tu compra! Todos nuestros productos cuentan con garantía de 6 meses.</div>
+        <table style="width:100%;border-collapse:collapse;">
+          <tr>
+            <td style="border:1px solid #000;padding:10px 8px;text-align:center;vertical-align:bottom;width:33%;font-size:11px;">_____________________<br>Firma y sello emisor</td>
+            <td style="border:1px solid #000;padding:10px 8px;width:33%;font-size:11px;"><strong>Observación:</strong> -No registra-</td>
+            <td style="border:1px solid #000;padding:10px 8px;text-align:center;vertical-align:bottom;width:33%;font-size:11px;"><div style="text-align:left;margin-bottom:24px;"><strong>Recibí a satisfacción:</strong></div>___________________________________<br>Nombre, identificación, sello y fecha</td>
+          </tr>
+        </table>
+      </div>
+    </section>
+
+    <p class="seccion-titulo">↓ Reporte de Comisiones (solo ADMIN)</p>
+    <section style="padding: 0 38px 10px;">
+      <div style="background:#fff;border-radius:14px;box-shadow:var(--sombra);overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <thead>
+            <tr style="background:var(--echo-azul);color:#fff;text-align:left;">
+              <th style="padding:12px 16px;font-weight:400;">Vendedor</th>
+              <th style="padding:12px 16px;font-weight:400;">Remisiones</th>
+              <th style="padding:12px 16px;font-weight:400;">Nuevos</th>
+              <th style="padding:12px 16px;font-weight:400;">Recompras</th>
+              <th style="padding:12px 16px;font-weight:400;">Ventas</th>
+              <th style="padding:12px 16px;font-weight:400;">Comisión a pagar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-top:1px solid #f0eeea;"><td style="padding:12px 16px;"><strong>Jonathan Velásquez</strong></td><td style="padding:12px 16px;">14</td><td style="padding:12px 16px;">9</td><td style="padding:12px 16px;">5</td><td style="padding:12px 16px;">$8,420,000</td><td style="padding:12px 16px;"><strong style="color:var(--echo-azul);">$268,500</strong></td></tr>
+            <tr style="border-top:1px solid #f0eeea;"><td style="padding:12px 16px;"><strong>Laura Gómez</strong></td><td style="padding:12px 16px;">8</td><td style="padding:12px 16px;">3</td><td style="padding:12px 16px;">5</td><td style="padding:12px 16px;">$3,150,000</td><td style="padding:12px 16px;"><strong style="color:var(--echo-azul);">$94,500</strong></td></tr>
+          </tbody>
+          <tfoot>
+            <tr style="border-top:2px solid #e2e0dc;background:var(--echo-hueso);"><td style="padding:12px 16px;"><strong>Total</strong></td><td style="padding:12px 16px;"><strong>22</strong></td><td></td><td></td><td style="padding:12px 16px;"><strong>$11,570,000</strong></td><td style="padding:12px 16px;"><strong style="color:var(--echo-azul);">$363,000</strong></td></tr>
+          </tfoot>
+        </table>
+      </div>
+      <p style="color:var(--echo-gris);font-size:13px;">Filtra por rango de fechas y sede. La comisión sale "congelada" de cada remisión, así el pago no cambia aunque luego se ajuste la regla.</p>
+    </section>
+
+    <p class="seccion-titulo">↓ Reportes de administrador (Fase 5) · ventas, utilidad y top productos</p>
+    <section style="padding: 0 38px 10px;">
+      <div class="grid" style="margin-bottom:16px;">
+        <div class="t"><p style="color:var(--echo-gris);margin:0;">Ventas totales</p><h3 style="color:var(--echo-azul);margin:6px 0;">$11,570,000</h3><p style="color:var(--echo-gris);margin:0;">142 unidades</p></div>
+        <div class="t"><p style="color:var(--echo-gris);margin:0;">Remisiones</p><h3 style="margin:6px 0;">22</h3><p style="color:var(--echo-gris);margin:0;">Ticket prom.: $525,909</p></div>
+        <div class="t"><p style="color:var(--echo-gris);margin:0;">Utilidad</p><h3 style="color:var(--echo-azul);margin:6px 0;">$3,180,000</h3><p style="color:var(--echo-gris);margin:0;">Margen: 27.5%</p></div>
+      </div>
+      <h3 style="margin:0 0 8px;">Productos más vendidos</h3>
+      <div style="background:#fff;border-radius:14px;box-shadow:var(--sombra);overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <thead>
+            <tr style="background:var(--echo-azul);color:#fff;text-align:left;">
+              <th style="padding:12px 16px;font-weight:400;">#</th>
+              <th style="padding:12px 16px;font-weight:400;">Código</th>
+              <th style="padding:12px 16px;font-weight:400;">Artículo</th>
+              <th style="padding:12px 16px;font-weight:400;">Unidades</th>
+              <th style="padding:12px 16px;font-weight:400;">Ventas</th>
+              <th style="padding:12px 16px;font-weight:400;">Utilidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-top:1px solid #f0eeea;"><td style="padding:12px 16px;">1</td><td style="padding:12px 16px;">000006</td><td style="padding:12px 16px;"><strong>AMAZON ECHO DOT 5TH GEN NEGRO</strong></td><td style="padding:12px 16px;">38</td><td style="padding:12px 16px;">$7,790,000</td><td style="padding:12px 16px;">$2,090,000</td></tr>
+            <tr style="border-top:1px solid #f0eeea;"><td style="padding:12px 16px;">2</td><td style="padding:12px 16px;">000005</td><td style="padding:12px 16px;"><strong>AMAZON ECHO DOT 5TH BLANCO</strong></td><td style="padding:12px 16px;">21</td><td style="padding:12px 16px;">$4,305,000</td><td style="padding:12px 16px;">$1,050,000</td></tr>
+            <tr style="border-top:1px solid #f0eeea;"><td style="padding:12px 16px;">3</td><td style="padding:12px 16px;">000035</td><td style="padding:12px 16px;"><strong>FIRE TV STICK 4K</strong></td><td style="padding:12px 16px;">17</td><td style="padding:12px 16px;">$2,890,000</td><td style="padding:12px 16px;">$640,000</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="color:var(--echo-gris);font-size:13px;">Filtra por rango de fechas y sede. Utilidad = precio − costo congelado de cada línea de venta; el margen y el top de productos se calculan en el backend.</p>
+    </section>
+
+    <p class="seccion-titulo">↓ Usuarios (solo ADMIN) · alta y listado con rol y sede</p>
+    <section style="padding: 0 38px 10px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="margin:0;">Usuarios</h2>
+        <button class="btn" style="width:auto;padding:10px 18px;">+ Crear usuario</button>
+      </div>
+      <div style="background:#fff;border-radius:14px;box-shadow:var(--sombra);overflow:hidden;">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <thead>
+            <tr style="background:var(--echo-azul);color:#fff;text-align:left;">
+              <th style="padding:12px 16px;font-weight:400;">Nombre</th>
+              <th style="padding:12px 16px;font-weight:400;">Email</th>
+              <th style="padding:12px 16px;font-weight:400;">Rol</th>
+              <th style="padding:12px 16px;font-weight:400;">Sede</th>
+              <th style="padding:12px 16px;font-weight:400;">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-top:1px solid #f0eeea;"><td style="padding:12px 16px;"><strong>Administrador General</strong></td><td style="padding:12px 16px;">admin@empresa.com</td><td style="padding:12px 16px;"><span class="chip">ADMIN</span></td><td style="padding:12px 16px;">—</td><td style="padding:12px 16px;"><span style="background:rgba(15,166,209,.15);color:var(--echo-azul);border-radius:999px;padding:2px 10px;font-size:12px;">Activo</span></td></tr>
+            <tr style="border-top:1px solid #f0eeea;"><td style="padding:12px 16px;"><strong>Laura Gómez</strong></td><td style="padding:12px 16px;">laura@echotecnologia.co</td><td style="padding:12px 16px;"><span class="chip">OPERADOR</span></td><td style="padding:12px 16px;">Bogotá</td><td style="padding:12px 16px;"><span style="background:rgba(15,166,209,.15);color:var(--echo-azul);border-radius:999px;padding:2px 10px;font-size:12px;">Activo</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="color:var(--echo-gris);font-size:13px;">Solo el ADMIN crea usuarios. Contraseña con mínimo 8 caracteres (una letra y un número), hasheada con bcrypt en el backend.</p>
+    </section>
+
+    <p class="seccion-titulo">Paleta de marca aplicada</p>
+    <div class="paleta">
+      <div class="swatch"><div class="box" style="background:#0fa6d1"></div><small>Azul #0FA6D1</small></div>
+      <div class="swatch"><div class="box" style="background:#4de2e5"></div><small>Turquesa #4DE2E5</small></div>
+      <div class="swatch"><div class="box" style="background:#94d6ea"></div><small>Celeste #94D6EA</small></div>
+      <div class="swatch"><div class="box" style="background:#959595"></div><small>Gris #959595</small></div>
+      <div class="swatch"><div class="box" style="background:#090808"></div><small>Negro #090808</small></div>
+      <div class="swatch"><div class="box" style="background:#ff5757"></div><small>Coral #FF5757</small></div>
+      <div class="swatch"><div class="box" style="background:#f7f5f2;border:1px solid #e2e0dc"></div><small>Hueso #F7F5F2</small></div>
+    </div>
+  </body>
+</html>
