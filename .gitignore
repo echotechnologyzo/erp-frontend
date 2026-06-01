@@ -1,0 +1,14 @@
+# Dependencias
+node_modules/
+
+# Build de producción
+dist/
+
+# Variables de entorno locales (en Vercel se configuran en el panel)
+.env
+.env.*.local
+.env.local
+
+# Logs y sistema
+*.log
+.DS_Store
