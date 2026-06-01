@@ -741,15 +741,16 @@
               <th style="padding:12px 16px;font-weight:400;">Rol</th>
               <th style="padding:12px 16px;font-weight:400;">Sede</th>
               <th style="padding:12px 16px;font-weight:400;">Estado</th>
+              <th style="padding:12px 16px;font-weight:400;">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="border-top:1px solid #f0eeea;"><td style="padding:12px 16px;"><strong>Administrador General</strong></td><td style="padding:12px 16px;">admin@empresa.com</td><td style="padding:12px 16px;"><span class="chip">ADMIN</span></td><td style="padding:12px 16px;">—</td><td style="padding:12px 16px;"><span style="background:rgba(15,166,209,.15);color:var(--echo-azul);border-radius:999px;padding:2px 10px;font-size:12px;">Activo</span></td></tr>
-            <tr style="border-top:1px solid #f0eeea;"><td style="padding:12px 16px;"><strong>Laura Gómez</strong></td><td style="padding:12px 16px;">laura@echotecnologia.co</td><td style="padding:12px 16px;"><span class="chip">OPERADOR</span></td><td style="padding:12px 16px;">Bogotá</td><td style="padding:12px 16px;"><span style="background:rgba(15,166,209,.15);color:var(--echo-azul);border-radius:999px;padding:2px 10px;font-size:12px;">Activo</span></td></tr>
+            <tr style="border-top:1px solid #f0eeea;"><td style="padding:12px 16px;"><strong>Administrador General</strong> <span style="color:var(--echo-gris);font-size:12px;">(tú)</span></td><td style="padding:12px 16px;">admin@empresa.com</td><td style="padding:12px 16px;"><span class="chip">ADMIN</span></td><td style="padding:12px 16px;">—</td><td style="padding:12px 16px;"><span style="background:rgba(15,166,209,.15);color:var(--echo-azul);border-radius:999px;padding:2px 10px;font-size:12px;">Activo</span></td><td style="padding:12px 16px;"><button class="salir" style="padding:5px 9px;font-size:13px;">Contraseña</button></td></tr>
+            <tr style="border-top:1px solid #f0eeea;"><td style="padding:12px 16px;"><strong>Laura Gómez</strong></td><td style="padding:12px 16px;">laura@echotecnologia.co</td><td style="padding:12px 16px;"><span class="chip">OPERADOR</span></td><td style="padding:12px 16px;">Bogotá</td><td style="padding:12px 16px;"><span style="background:rgba(15,166,209,.15);color:var(--echo-azul);border-radius:999px;padding:2px 10px;font-size:12px;">Activo</span></td><td style="padding:12px 16px;"><div style="display:flex;gap:6px;flex-wrap:wrap;"><button class="salir" style="padding:5px 9px;font-size:13px;">Desactivar</button><button class="salir" style="padding:5px 9px;font-size:13px;">Contraseña</button><button class="salir" style="padding:5px 9px;font-size:13px;color:var(--echo-coral);border-color:var(--echo-coral);">Eliminar</button></div></td></tr>
           </tbody>
         </table>
       </div>
-      <p style="color:var(--echo-gris);font-size:13px;">Solo el ADMIN crea usuarios. Contraseña con mínimo 8 caracteres (una letra y un número), hasheada con bcrypt en el backend.</p>
+      <p style="color:var(--echo-gris);font-size:13px;">Solo el ADMIN gestiona usuarios: crear, activar/desactivar, cambiar contraseña y eliminar. No puede desactivarse ni eliminarse a sí mismo. Contraseña con mínimo 8 caracteres (una letra y un número), hasheada con bcrypt en el backend.</p>
     </section>
 
     <p class="seccion-titulo">Paleta de marca aplicada</p>

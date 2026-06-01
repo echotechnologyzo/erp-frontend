@@ -502,6 +502,21 @@ export const usuariosApi = {
   listar: () => api<Usuario[]>("/usuarios"),
   crear: (datos: NuevoUsuario) =>
     api<Usuario>("/usuarios", { method: "POST", body: JSON.stringify(datos) }),
+  // Activar / desactivar un usuario.
+  cambiarEstado: (id: string, activo: boolean) =>
+    api<Usuario>(`/usuarios/${id}/estado`, {
+      method: "PATCH",
+      body: JSON.stringify({ activo }),
+    }),
+  // Cambiar la contraseña de un usuario.
+  cambiarPassword: (id: string, password: string) =>
+    api<{ ok: boolean }>(`/usuarios/${id}/password`, {
+      method: "PATCH",
+      body: JSON.stringify({ password }),
+    }),
+  // Eliminar un usuario.
+  eliminar: (id: string) =>
+    api<{ ok: boolean }>(`/usuarios/${id}`, { method: "DELETE" }),
 };
 
 // --- Reportes (solo ADMIN) ---
