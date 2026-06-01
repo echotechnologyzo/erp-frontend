@@ -3,6 +3,7 @@ node_modules/
 
 # Build de producción
 dist/
+*.tsbuildinfo
 
 # Variables de entorno locales (en Vercel se configuran en el panel)
 .env

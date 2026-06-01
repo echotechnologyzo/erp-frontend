@@ -180,6 +180,7 @@ export interface Compra {
   fecha: string;
   sede: string;
   proveedor: string;
+  proveedorDocumento: string; // NIT/documento del proveedor
   remisionProveedor: string | null;
   subtotal: number;
   total: number;
