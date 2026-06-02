@@ -683,6 +683,27 @@ button {
   font-size: 12px;
   line-height: 1.35;
   padding: 8px;
+  position: relative; /* ancla la marca de agua ANULADA */
+}
+/* Marca de agua diagonal para remisiones anuladas (se ve en pantalla y al imprimir) */
+.rp-marca-anulada {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-28deg);
+  font-size: 110px;
+  font-weight: 800;
+  letter-spacing: 6px;
+  color: rgba(255, 87, 87, 0.22); /* coral translúcido */
+  border: 6px solid rgba(255, 87, 87, 0.22);
+  border-radius: 14px;
+  padding: 6px 28px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 5;
+  /* Asegura que el color se imprima tal cual (sin que el navegador lo aclare) */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 .remision-print table {
   width: 100%;

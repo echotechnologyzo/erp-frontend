@@ -540,6 +540,7 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
 
         {/* Documento imprimible */}
         <div className="remision-print" ref={ref}>
+          {r.estado === "ANULADA" && <div className="rp-marca-anulada">ANULADA</div>}
           <div className="rp-cab">
             <div className="rp-logo">ECHO<span>Tecnología en Casa</span></div>
             <div className="rp-emisor">
