@@ -96,7 +96,15 @@ export function Dashboard() {
       </aside>
 
       <main className="dash-main">
-        {vista === "inicio" && <Inicio nombre={usuario.nombre} rol={usuario.rol} esAdmin={esAdmin} onSalir={logout} />}
+        {vista === "inicio" && (
+          <Inicio
+            nombre={usuario.nombre}
+            rol={usuario.rol}
+            esAdmin={esAdmin}
+            onSalir={logout}
+            onIr={setVista}
+          />
+        )}
         {vista === "articulos" && <Articulos />}
         {vista === "inventario" && <Inventario />}
         {vista === "compras" && <Compras />}
@@ -118,25 +126,27 @@ function Inicio({
   rol,
   esAdmin,
   onSalir,
+  onIr,
 }: {
   nombre: string;
   rol: string;
   esAdmin: boolean;
   onSalir: () => void;
+  onIr: (v: Vista) => void;
 }) {
-  const modulos = [
-    { titulo: "Artículos", desc: "Crear y editar productos.", fase: "Disponible" },
-    { titulo: "Inventario", desc: "Existencias, ajustes y traslados.", fase: "Disponible" },
-    { titulo: "Compras", desc: "Remisiones de compra + Excel.", fase: "Disponible" },
-    { titulo: "Proveedores", desc: "Directorio de proveedores.", fase: "Disponible" },
-    { titulo: "Clientes", desc: "Directorio + importar/exportar.", fase: "Disponible" },
-    { titulo: "Empleados", desc: "Personal por sede.", fase: "Disponible" },
-    { titulo: "Remisiones", desc: "Ventas, garantía e impresión PDF.", fase: "Disponible" },
+  const modulos: { id: Vista; titulo: string; desc: string; fase: string }[] = [
+    { id: "articulos", titulo: "Artículos", desc: "Crear y editar productos.", fase: "Disponible" },
+    { id: "inventario", titulo: "Inventario", desc: "Existencias, ajustes y traslados.", fase: "Disponible" },
+    { id: "compras", titulo: "Compras", desc: "Remisiones de compra + Excel.", fase: "Disponible" },
+    { id: "proveedores", titulo: "Proveedores", desc: "Directorio de proveedores.", fase: "Disponible" },
+    { id: "clientes", titulo: "Clientes", desc: "Directorio + importar/exportar.", fase: "Disponible" },
+    { id: "empleados", titulo: "Empleados", desc: "Personal por sede.", fase: "Disponible" },
+    { id: "remisiones", titulo: "Remisiones", desc: "Ventas, garantía e impresión PDF.", fase: "Disponible" },
   ];
-  const modulosAdmin = [
-    { titulo: "Usuarios", desc: "Crear y administrar usuarios.", fase: "Disponible" },
-    { titulo: "Comisiones", desc: "Pago a vendedoras (4% / 1%).", fase: "Disponible" },
-    { titulo: "Reportes", desc: "Ventas, utilidades, top productos.", fase: "Disponible" },
+  const modulosAdmin: { id: Vista; titulo: string; desc: string; fase: string }[] = [
+    { id: "usuarios", titulo: "Usuarios", desc: "Crear y administrar usuarios.", fase: "Disponible" },
+    { id: "comisiones", titulo: "Comisiones", desc: "Pago a vendedoras (4% / 1%).", fase: "Disponible" },
+    { id: "reportes", titulo: "Reportes", desc: "Ventas, utilidades, top productos.", fase: "Disponible" },
   ];
 
   return (
@@ -156,6 +166,13 @@ function Inicio({
             <h3>{m.titulo}</h3>
             <p>{m.desc}</p>
             <p style={{ marginTop: 8, color: "var(--echo-azul)" }}>{m.fase}</p>
+            <button
+              className="btn-primario"
+              style={{ width: "auto", marginTop: 14 }}
+              onClick={() => onIr(m.id)}
+            >
+              Entrar →
+            </button>
           </div>
         ))}
       </div>

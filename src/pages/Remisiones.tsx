@@ -224,6 +224,7 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
   const [clienteBuscar, setClienteBuscar] = useState("");
   const [clienteOpc, setClienteOpc] = useState<Cliente[]>([]);
   const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [crearCliente, setCrearCliente] = useState(false); // abre el modal rápido de alta
 
   const [items, setItems] = useState<NuevaRemisionItem[]>([
     { articuloId: "", cantidad: 1, precioUnitario: 0 },
@@ -301,6 +302,7 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
   }
 
   return (
+    <>
     <div className="modal-fondo" onClick={onCerrar}>
       <div className="modal" style={{ maxWidth: 820 }} onClick={(e) => e.stopPropagation()}>
         <h2>+ Crear remisión de venta</h2>
@@ -346,6 +348,22 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
                     ))}
                   </div>
                 )}
+                {/* Si no está creado, se puede dar de alta sin salir de la remisión */}
+                <div style={{ marginTop: 8 }}>
+                  {clienteBuscar.trim().length >= 2 && clienteOpc.length === 0 && (
+                    <span className="muted" style={{ marginRight: 10 }}>
+                      Sin coincidencias para “{clienteBuscar}”.
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="btn-secundario"
+                    style={{ padding: "6px 12px" }}
+                    onClick={() => setCrearCliente(true)}
+                  >
+                    + Crear cliente nuevo
+                  </button>
+                </div>
               </>
             )}
           </div>
@@ -411,6 +429,114 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
             <button type="button" className="btn-secundario" onClick={onCerrar}>Cancelar</button>
             <button type="submit" className="btn-primario" style={{ width: "auto" }} disabled={guardando}>
               {guardando ? "Guardando…" : "Emitir remisión"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {/* Modal rápido para dar de alta un cliente sin salir de la remisión */}
+    {crearCliente && (
+      <ModalNuevoClienteRapido
+        sugerencia={clienteBuscar}
+        onCerrar={() => setCrearCliente(false)}
+        onCreado={(nuevo) => {
+          setCliente(nuevo);
+          setClienteOpc([]);
+          setClienteBuscar("");
+          setCrearCliente(false);
+        }}
+      />
+    )}
+    </>
+  );
+}
+
+// --------------------------------------------------------------------------
+// Modal rápido para crear un cliente desde la propia remisión.
+// Pide lo esencial (documento y nombre, más datos de contacto opcionales que
+// salen en el PDF) y lo crea con clientesApi.crear, devolviéndolo ya elegido.
+// --------------------------------------------------------------------------
+function ModalNuevoClienteRapido({
+  sugerencia,
+  onCerrar,
+  onCreado,
+}: {
+  sugerencia: string;
+  onCerrar: () => void;
+  onCreado: (cliente: Cliente) => void;
+}) {
+  // Si la búsqueda era numérica la usamos como documento; si no, como nombre.
+  const esNumero = /^\d+$/.test(sugerencia.trim());
+  const [documento, setDocumento] = useState(esNumero ? sugerencia.trim() : "");
+  const [nombre, setNombre] = useState(esNumero ? "" : sugerencia.trim());
+  const [celular, setCelular] = useState("");
+  const [direccion, setDireccion] = useState("");
+  const [ciudad, setCiudad] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!documento.trim() || !nombre.trim()) {
+      setError("Documento y nombre son obligatorios.");
+      return;
+    }
+    setGuardando(true);
+    try {
+      const creado = await clientesApi.crear({
+        documento: documento.trim(),
+        nombre: nombre.trim(),
+        celular: celular || undefined,
+        direccion: direccion || undefined,
+        ciudad: ciudad || undefined,
+        formaPago: "CONTADO",
+        moneda: "COP",
+      });
+      onCreado(creado);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al crear el cliente.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="modal-fondo" onClick={onCerrar}>
+      <div className="modal" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
+        <h2>+ Crear cliente</h2>
+        <form onSubmit={onSubmit}>
+          {error && <div className="alerta-error">{error}</div>}
+          <div className="grid-2">
+            <div className="campo">
+              <label>Documento *</label>
+              <input value={documento} onChange={(e) => setDocumento(e.target.value)} required />
+            </div>
+            <div className="campo">
+              <label>Celular</label>
+              <input value={celular} onChange={(e) => setCelular(e.target.value)} />
+            </div>
+          </div>
+          <div className="campo">
+            <label>Nombre / Razón social *</label>
+            <input value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+          </div>
+          <div className="grid-2">
+            <div className="campo">
+              <label>Dirección</label>
+              <input value={direccion} onChange={(e) => setDireccion(e.target.value)} />
+            </div>
+            <div className="campo">
+              <label>Ciudad</label>
+              <input value={ciudad} onChange={(e) => setCiudad(e.target.value)} />
+            </div>
+          </div>
+          <p className="muted">Se crea con moneda COP y forma de pago Contado. Puedes completar el resto luego en Clientes.</p>
+          <div className="modal-acciones">
+            <button type="button" className="btn-secundario" onClick={onCerrar}>Cancelar</button>
+            <button type="submit" className="btn-primario" style={{ width: "auto" }} disabled={guardando}>
+              {guardando ? "Guardando…" : "Crear y usar"}
             </button>
           </div>
         </form>
