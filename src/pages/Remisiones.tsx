@@ -20,6 +20,7 @@ import {
   type NuevaRemisionItem,
   type FilaImportRemision,
 } from "../api/recursos";
+import { ModalCliente } from "./Clientes";
 
 // Formato de dinero igual al del PDF actual: "$205,000" (coma de miles).
 const pesos = (v: number) => "$" + Math.round(Number(v)).toLocaleString("en-US");
@@ -435,13 +436,19 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
       </div>
     </div>
 
-    {/* Modal rápido para dar de alta un cliente sin salir de la remisión */}
+    {/* Alta de cliente con el formulario COMPLETO (el mismo de la pantalla
+        Clientes), sin salir de la remisión. Así no hay que editarlo después. */}
     {crearCliente && (
-      <ModalNuevoClienteRapido
-        sugerencia={clienteBuscar}
+      <ModalCliente
+        cliente={null}
+        prefill={
+          /^\d+$/.test(clienteBuscar.trim())
+            ? { documento: clienteBuscar.trim() }
+            : { nombre: clienteBuscar.trim() }
+        }
         onCerrar={() => setCrearCliente(false)}
-        onCreado={(nuevo) => {
-          setCliente(nuevo);
+        onGuardado={(creado) => {
+          setCliente(creado);
           setClienteOpc([]);
           setClienteBuscar("");
           setCrearCliente(false);
@@ -449,99 +456,6 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
       />
     )}
     </>
-  );
-}
-
-// --------------------------------------------------------------------------
-// Modal rápido para crear un cliente desde la propia remisión.
-// Pide lo esencial (documento y nombre, más datos de contacto opcionales que
-// salen en el PDF) y lo crea con clientesApi.crear, devolviéndolo ya elegido.
-// --------------------------------------------------------------------------
-function ModalNuevoClienteRapido({
-  sugerencia,
-  onCerrar,
-  onCreado,
-}: {
-  sugerencia: string;
-  onCerrar: () => void;
-  onCreado: (cliente: Cliente) => void;
-}) {
-  // Si la búsqueda era numérica la usamos como documento; si no, como nombre.
-  const esNumero = /^\d+$/.test(sugerencia.trim());
-  const [documento, setDocumento] = useState(esNumero ? sugerencia.trim() : "");
-  const [nombre, setNombre] = useState(esNumero ? "" : sugerencia.trim());
-  const [celular, setCelular] = useState("");
-  const [direccion, setDireccion] = useState("");
-  const [ciudad, setCiudad] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [guardando, setGuardando] = useState(false);
-
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    if (!documento.trim() || !nombre.trim()) {
-      setError("Documento y nombre son obligatorios.");
-      return;
-    }
-    setGuardando(true);
-    try {
-      const creado = await clientesApi.crear({
-        documento: documento.trim(),
-        nombre: nombre.trim(),
-        celular: celular || undefined,
-        direccion: direccion || undefined,
-        ciudad: ciudad || undefined,
-        formaPago: "CONTADO",
-        moneda: "COP",
-      });
-      onCreado(creado);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al crear el cliente.");
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  return (
-    <div className="modal-fondo" onClick={onCerrar}>
-      <div className="modal" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
-        <h2>+ Crear cliente</h2>
-        <form onSubmit={onSubmit}>
-          {error && <div className="alerta-error">{error}</div>}
-          <div className="grid-2">
-            <div className="campo">
-              <label>Documento *</label>
-              <input value={documento} onChange={(e) => setDocumento(e.target.value)} required />
-            </div>
-            <div className="campo">
-              <label>Celular</label>
-              <input value={celular} onChange={(e) => setCelular(e.target.value)} />
-            </div>
-          </div>
-          <div className="campo">
-            <label>Nombre / Razón social *</label>
-            <input value={nombre} onChange={(e) => setNombre(e.target.value)} required />
-          </div>
-          <div className="grid-2">
-            <div className="campo">
-              <label>Dirección</label>
-              <input value={direccion} onChange={(e) => setDireccion(e.target.value)} />
-            </div>
-            <div className="campo">
-              <label>Ciudad</label>
-              <input value={ciudad} onChange={(e) => setCiudad(e.target.value)} />
-            </div>
-          </div>
-          <p className="muted">Se crea con moneda COP y forma de pago Contado. Puedes completar el resto luego en Clientes.</p>
-          <div className="modal-acciones">
-            <button type="button" className="btn-secundario" onClick={onCerrar}>Cancelar</button>
-            <button type="submit" className="btn-primario" style={{ width: "auto" }} disabled={guardando}>
-              {guardando ? "Guardando…" : "Crear y usar"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
   );
 }
 

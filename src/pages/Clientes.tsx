@@ -374,19 +374,23 @@ export function Clientes() {
 // --------------------------------------------------------------------------
 const TIPOS_ID = ["Cédula de ciudadanía", "NIT", "Cédula de extranjería", "Pasaporte", "Otro"];
 
-function ModalCliente({
+export function ModalCliente({
   cliente,
   onCerrar,
   onGuardado,
+  prefill,
 }: {
   cliente: Cliente | null;
   onCerrar: () => void;
-  onGuardado: () => void;
+  // Devuelve el cliente guardado (creado o editado) para que el llamador lo use.
+  onGuardado: (guardado: Cliente) => void;
+  // Valores iniciales para una alta rápida (p. ej. desde la remisión).
+  prefill?: { documento?: string; nombre?: string };
 }) {
   const [form, setForm] = useState<NuevoCliente>({
-    documento: cliente?.documento ?? "",
+    documento: cliente?.documento ?? prefill?.documento ?? "",
     tipoIdentificacion: cliente?.tipoIdentificacion ?? "Cédula de ciudadanía",
-    nombre: cliente?.nombre ?? "",
+    nombre: cliente?.nombre ?? prefill?.nombre ?? "",
     email: cliente?.email ?? "",
     telefono1: cliente?.telefono1 ?? "",
     telefono2: cliente?.telefono2 ?? "",
@@ -416,9 +420,10 @@ function ModalCliente({
     setError(null);
     setGuardando(true);
     try {
-      if (cliente) await clientesApi.actualizar(cliente.id, form);
-      else await clientesApi.crear(form);
-      onGuardado();
+      const guardado = cliente
+        ? await clientesApi.actualizar(cliente.id, form)
+        : await clientesApi.crear(form);
+      onGuardado(guardado);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al guardar el cliente.");
     } finally {
