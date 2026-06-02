@@ -12,11 +12,13 @@ import {
   clientesApi,
   catalogosApi,
   articulosApi,
+  empleadosApi,
   type Remision,
   type RemisionCompleta,
   type Sede,
   type Articulo,
   type Cliente,
+  type Empleado,
   type NuevaRemisionItem,
   type FilaImportRemision,
 } from "../api/recursos";
@@ -220,6 +222,7 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
   const [vendedor, setVendedor] = useState("");
   const [medioPago, setMedioPago] = useState("");
   const [observacion, setObservacion] = useState("");
+  const [empleados, setEmpleados] = useState<Empleado[]>([]);
 
   // Buscador de cliente.
   const [clienteBuscar, setClienteBuscar] = useState("");
@@ -237,6 +240,7 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
       if (s[0]) setSedeId(s[0].id);
     });
     articulosApi.listar().then(setArticulos);
+    empleadosApi.listar().then(setEmpleados).catch(() => setEmpleados([]));
   }, []);
 
   // Buscar clientes (con debounce sencillo).
@@ -321,7 +325,12 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
             </div>
             <div className="campo">
               <label>Vendedor</label>
-              <input value={vendedor} onChange={(e) => setVendedor(e.target.value)} placeholder="Nombre de la vendedora" />
+              <select value={vendedor} onChange={(e) => setVendedor(e.target.value)}>
+                <option value="">— Selecciona —</option>
+                {empleados.map((em) => (
+                  <option key={em.id} value={em.nombre}>{em.nombre}</option>
+                ))}
+              </select>
             </div>
           </div>
 
@@ -374,12 +383,11 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
             const art = articulos.find((a) => a.id === it.articuloId);
             return (
               <div key={idx} className="linea-item">
-                <select value={it.articuloId} onChange={(e) => elegirArticulo(idx, e.target.value)}>
-                  <option value="">Artículo…</option>
-                  {articulos.map((a) => (
-                    <option key={a.id} value={a.id}>{a.codigo} · {a.nombre}</option>
-                  ))}
-                </select>
+                <SelectorArticulo
+                  articulos={articulos}
+                  valor={it.articuloId}
+                  onElegir={(id) => elegirArticulo(idx, id)}
+                />
                 <input
                   type="number" min="1" step="1" title="Cantidad" style={{ width: 70 }}
                   value={it.cantidad}
@@ -460,6 +468,61 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
 }
 
 // --------------------------------------------------------------------------
+// Selector de artículo con BÚSQUEDA (por nombre o código), para no depender
+// de un desplegable largo. Muestra el artículo elegido y, al enfocar, permite
+// teclear para filtrar y elegir de la lista.
+// --------------------------------------------------------------------------
+function SelectorArticulo({
+  articulos,
+  valor,
+  onElegir,
+}: {
+  articulos: Articulo[];
+  valor: string;
+  onElegir: (id: string) => void;
+}) {
+  const [q, setQ] = useState("");
+  const [abierto, setAbierto] = useState(false);
+  const elegido = articulos.find((a) => a.id === valor);
+  const filtro = q.trim().toLowerCase();
+  const opciones = (filtro
+    ? articulos.filter(
+        (a) => a.nombre.toLowerCase().includes(filtro) || a.codigo.toLowerCase().includes(filtro)
+      )
+    : articulos
+  ).slice(0, 15);
+
+  return (
+    <div style={{ position: "relative", flex: 1, minWidth: 220 }}>
+      <input
+        value={abierto ? q : elegido ? `${elegido.codigo} · ${elegido.nombre}` : q}
+        placeholder="Buscar artículo por nombre o código…"
+        onFocus={() => { setAbierto(true); setQ(""); }}
+        onChange={(e) => { setQ(e.target.value); setAbierto(true); }}
+        onBlur={() => setTimeout(() => setAbierto(false), 150)}
+      />
+      {abierto && opciones.length > 0 && (
+        <div
+          className="lista-opciones"
+          style={{ position: "absolute", zIndex: 10, width: "100%", maxHeight: 240, overflowY: "auto" }}
+        >
+          {opciones.map((a) => (
+            <button
+              type="button"
+              key={a.id}
+              className="opcion"
+              onMouseDown={() => { onElegir(a.id); setAbierto(false); }}
+            >
+              <strong>{a.codigo}</strong> · {a.nombre}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --------------------------------------------------------------------------
 // Vista IMPRIMIBLE: replica el formato del PDF MED-9480.
 // Se muestra como overlay; "Imprimir / Guardar PDF" llama a window.print().
 // El CSS @media print (theme.css) oculta todo menos .remision-print.
@@ -484,9 +547,13 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
   const dirEmisor = r.sede.direccion ?? "Antioquia / Medellín / Carrera 55 #12Sur 09 Torre 3 Apto 9920";
 
   return (
-    <div className="modal-fondo no-print" onClick={onCerrar}>
+    // OJO: NO poner "no-print" en este contenedor: al imprimir, display:none en
+    // un ancestro oculta también el documento (.remision-print) y el PDF sale en
+    // blanco. La impresión se controla con visibility en @media print; aquí solo
+    // marcamos como no-print la barra de botones.
+    <div className="modal-fondo" onClick={onCerrar}>
       <div className="modal" style={{ maxWidth: 900, maxHeight: "92vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
-        <div className="modal-acciones" style={{ justifyContent: "space-between", marginTop: 0, marginBottom: 12 }}>
+        <div className="modal-acciones no-print" style={{ justifyContent: "space-between", marginTop: 0, marginBottom: 12 }}>
           <h2 style={{ margin: 0 }}>Remisión {r.documento}</h2>
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn-secundario" onClick={onCerrar}>Cerrar</button>

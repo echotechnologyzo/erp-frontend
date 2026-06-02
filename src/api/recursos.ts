@@ -294,6 +294,8 @@ export const clientesApi = {
       method: "POST",
       body: JSON.stringify({ filas }),
     }),
+  eliminar: (id: string) =>
+    api<{ ok: boolean }>(`/clientes/${id}`, { method: "DELETE" }),
 };
 
 // --- Proveedores ---

@@ -815,4 +815,19 @@ button {
   .no-print {
     display: none !important;
   }
+  /* Neutralizar los contenedores del modal para que no recorten ni desplacen
+     el documento al imprimir (si no, el PDF puede salir en blanco o cortado). */
+  .modal-fondo {
+    position: static;
+    padding: 0;
+    background: none;
+    display: block;
+  }
+  .modal {
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none;
+    padding: 0;
+    max-width: none;
+  }
 }

@@ -10,8 +10,10 @@ import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import * as XLSX from "xlsx";
 import {
   clientesApi,
+  empleadosApi,
   type Cliente,
   type NuevoCliente,
+  type Empleado,
   type FilaImportCliente,
   type ResumenImportClientes,
 } from "../api/recursos";
@@ -93,6 +95,22 @@ export function Clientes() {
   }, []);
 
   const totalPaginas = Math.max(1, Math.ceil(total / TAM_PAGINA));
+
+  // --- Eliminar cliente (con confirmación) ---
+  async function eliminar(c: Cliente) {
+    if (!window.confirm(`¿Eliminar al cliente "${c.nombre}"? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+    setError(null);
+    setAviso(null);
+    try {
+      await clientesApi.eliminar(c.id);
+      setAviso(`Cliente ${c.nombre} eliminado.`);
+      cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al eliminar el cliente.");
+    }
+  }
 
   // --- Importación desde Excel de Effi ---
   async function onArchivoExcel(e: ChangeEvent<HTMLInputElement>) {
@@ -324,9 +342,18 @@ export function Clientes() {
                       </span>
                     </td>
                     <td>
-                      <button className="btn-secundario" style={{ padding: "6px 12px" }} onClick={() => setEditar(c)}>
-                        Editar
-                      </button>
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        <button className="btn-secundario" style={{ padding: "6px 12px" }} onClick={() => setEditar(c)}>
+                          Editar
+                        </button>
+                        <button
+                          className="btn-secundario"
+                          style={{ padding: "6px 12px", color: "var(--echo-coral)", borderColor: "var(--echo-coral)" }}
+                          onClick={() => eliminar(c)}
+                        >
+                          Eliminar
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -410,6 +437,12 @@ export function ModalCliente({
   });
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+  // Vendedores disponibles (Empleados) para el desplegable, evita errores de tipeo.
+  const [empleados, setEmpleados] = useState<Empleado[]>([]);
+
+  useEffect(() => {
+    empleadosApi.listar().then(setEmpleados).catch(() => setEmpleados([]));
+  }, []);
 
   function set<K extends keyof NuevoCliente>(campo: K, valor: NuevoCliente[K]) {
     setForm((f) => ({ ...f, [campo]: valor }));
@@ -507,7 +540,19 @@ export function ModalCliente({
 
           <div className="campo">
             <label>Vendedor</label>
-            <input value={form.vendedor ?? ""} onChange={(e) => set("vendedor", e.target.value)} />
+            <select value={form.vendedor ?? ""} onChange={(e) => set("vendedor", e.target.value)}>
+              <option value="">— Sin asignar —</option>
+              {/* Si el valor actual no está en Empleados, lo conservamos como opción. */}
+              {form.vendedor && !empleados.some((em) => em.nombre === form.vendedor) && (
+                <option value={form.vendedor}>{form.vendedor} (actual)</option>
+              )}
+              {empleados.map((em) => (
+                <option key={em.id} value={em.nombre}>{em.nombre}</option>
+              ))}
+            </select>
+            {empleados.length === 0 && (
+              <small className="muted">No hay empleados aún. Créalos en la pantalla Empleados.</small>
+            )}
           </div>
 
           <p className="muted">Moneda: COP · Forma de pago: Contado</p>
