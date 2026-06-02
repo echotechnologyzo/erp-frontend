@@ -157,6 +157,24 @@ function ModalEmpleado({
     }
   }
 
+  // Eliminar el empleado en edición (con confirmación).
+  async function eliminar() {
+    if (!empleado) return;
+    if (!window.confirm(`¿Eliminar al empleado "${empleado.nombre}"? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+    setError(null);
+    setGuardando(true);
+    try {
+      await empleadosApi.eliminar(empleado.id);
+      onGuardado();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al eliminar el empleado.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   return (
     <div className="modal-fondo" onClick={onCerrar}>
       <div className="modal" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
@@ -196,11 +214,24 @@ function ModalEmpleado({
               <input type="email" value={form.email ?? ""} onChange={(e) => set("email", e.target.value)} />
             </div>
           </div>
-          <div className="modal-acciones">
-            <button type="button" className="btn-secundario" onClick={onCerrar}>Cancelar</button>
-            <button type="submit" className="btn-primario" style={{ width: "auto" }} disabled={guardando}>
-              {guardando ? "Guardando…" : empleado ? "Guardar cambios" : "Crear empleado"}
-            </button>
+          <div className="modal-acciones" style={{ justifyContent: empleado ? "space-between" : "flex-end" }}>
+            {empleado && (
+              <button
+                type="button"
+                className="btn-secundario"
+                style={{ color: "var(--echo-coral)", borderColor: "var(--echo-coral)" }}
+                onClick={eliminar}
+                disabled={guardando}
+              >
+                Eliminar
+              </button>
+            )}
+            <div style={{ display: "flex", gap: 12 }}>
+              <button type="button" className="btn-secundario" onClick={onCerrar}>Cancelar</button>
+              <button type="submit" className="btn-primario" style={{ width: "auto" }} disabled={guardando}>
+                {guardando ? "Guardando…" : empleado ? "Guardar cambios" : "Crear empleado"}
+              </button>
+            </div>
           </div>
         </form>
       </div>

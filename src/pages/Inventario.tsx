@@ -14,6 +14,7 @@ import {
   type Sede,
   type Articulo,
 } from "../api/recursos";
+import { SelectorArticulo } from "../components/SelectorArticulo";
 
 const moneda = (v: number | string) =>
   new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(Number(v));
@@ -348,12 +349,11 @@ function Traslados() {
         <h3 style={{ margin: "10px 0" }}>Artículos a trasladar</h3>
         {items.map((it, idx) => (
           <div key={idx} className="linea-item">
-            <select value={it.articuloId} onChange={(e) => actualizarItem(idx, "articuloId", e.target.value)}>
-              <option value="">Artículo…</option>
-              {articulos.map((a) => (
-                <option key={a.id} value={a.id}>{a.codigo} · {a.nombre}</option>
-              ))}
-            </select>
+            <SelectorArticulo
+              articulos={articulos}
+              valor={it.articuloId}
+              onElegir={(id) => actualizarItem(idx, "articuloId", id)}
+            />
             <input
               type="number" min="1" step="1" title="Cantidad" style={{ width: 90 }}
               value={it.cantidad}

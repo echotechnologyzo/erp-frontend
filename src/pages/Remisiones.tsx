@@ -23,6 +23,7 @@ import {
   type FilaImportRemision,
 } from "../api/recursos";
 import { ModalCliente } from "./Clientes";
+import { SelectorArticulo } from "../components/SelectorArticulo";
 
 // Formato de dinero igual al del PDF actual: "$205,000" (coma de miles).
 const pesos = (v: number) => "$" + Math.round(Number(v)).toLocaleString("en-US");
@@ -464,61 +465,6 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
       />
     )}
     </>
-  );
-}
-
-// --------------------------------------------------------------------------
-// Selector de artículo con BÚSQUEDA (por nombre o código), para no depender
-// de un desplegable largo. Muestra el artículo elegido y, al enfocar, permite
-// teclear para filtrar y elegir de la lista.
-// --------------------------------------------------------------------------
-function SelectorArticulo({
-  articulos,
-  valor,
-  onElegir,
-}: {
-  articulos: Articulo[];
-  valor: string;
-  onElegir: (id: string) => void;
-}) {
-  const [q, setQ] = useState("");
-  const [abierto, setAbierto] = useState(false);
-  const elegido = articulos.find((a) => a.id === valor);
-  const filtro = q.trim().toLowerCase();
-  const opciones = (filtro
-    ? articulos.filter(
-        (a) => a.nombre.toLowerCase().includes(filtro) || a.codigo.toLowerCase().includes(filtro)
-      )
-    : articulos
-  ).slice(0, 15);
-
-  return (
-    <div style={{ position: "relative", flex: 1, minWidth: 220 }}>
-      <input
-        value={abierto ? q : elegido ? `${elegido.codigo} · ${elegido.nombre}` : q}
-        placeholder="Buscar artículo por nombre o código…"
-        onFocus={() => { setAbierto(true); setQ(""); }}
-        onChange={(e) => { setQ(e.target.value); setAbierto(true); }}
-        onBlur={() => setTimeout(() => setAbierto(false), 150)}
-      />
-      {abierto && opciones.length > 0 && (
-        <div
-          className="lista-opciones"
-          style={{ position: "absolute", zIndex: 10, width: "100%", maxHeight: 240, overflowY: "auto" }}
-        >
-          {opciones.map((a) => (
-            <button
-              type="button"
-              key={a.id}
-              className="opcion"
-              onMouseDown={() => { onElegir(a.id); setAbierto(false); }}
-            >
-              <strong>{a.codigo}</strong> · {a.nombre}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
   );
 }
 

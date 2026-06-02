@@ -9,12 +9,15 @@ import {
   comprasApi,
   catalogosApi,
   articulosApi,
+  proveedoresApi,
   type Compra,
   type Sede,
   type Articulo,
+  type Proveedor,
   type NuevaCompraItem,
   type FilaImportCompra,
 } from "../api/recursos";
+import { SelectorArticulo } from "../components/SelectorArticulo";
 
 const moneda = (v: number) =>
   new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(v);
@@ -169,11 +172,14 @@ function ModalCrearCompra({ onCerrar, onCreado }: { onCerrar: () => void; onCrea
   const [sedeId, setSedeId] = useState("");
   const [documento, setDocumento] = useState("");
   const [nombre, setNombre] = useState("");
-  const [direccion, setDireccion] = useState("");
   const [remisionProveedor, setRemisionProveedor] = useState("");
   const [items, setItems] = useState<NuevaCompraItem[]>([
     { articuloId: "", cantidad: 1, costoUnitario: 0 },
   ]);
+
+  // Buscador de proveedor (por nombre o NIT) para reutilizar uno existente.
+  const [provBuscar, setProvBuscar] = useState("");
+  const [provOpc, setProvOpc] = useState<Proveedor[]>([]);
 
   useEffect(() => {
     catalogosApi.sedes().then((s) => {
@@ -182,6 +188,22 @@ function ModalCrearCompra({ onCerrar, onCreado }: { onCerrar: () => void; onCrea
     });
     articulosApi.listar().then(setArticulos);
   }, []);
+
+  // Búsqueda de proveedores con debounce sencillo.
+  useEffect(() => {
+    const t = setTimeout(async () => {
+      if (provBuscar.trim().length < 2) {
+        setProvOpc([]);
+        return;
+      }
+      try {
+        setProvOpc(await proveedoresApi.listar(provBuscar));
+      } catch {
+        setProvOpc([]);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [provBuscar]);
 
   function actualizarItem(idx: number, campo: keyof NuevaCompraItem, valor: string | number) {
     setItems((arr) => arr.map((it, i) => (i === idx ? { ...it, [campo]: valor } : it)));
@@ -202,7 +224,7 @@ function ModalCrearCompra({ onCerrar, onCreado }: { onCerrar: () => void; onCrea
     try {
       await comprasApi.crear({
         sedeId,
-        proveedor: { documento, nombre, direccion },
+        proveedor: { documento, nombre },
         remisionProveedor: remisionProveedor || undefined,
         items,
       });
@@ -236,6 +258,38 @@ function ModalCrearCompra({ onCerrar, onCreado }: { onCerrar: () => void; onCrea
             </div>
           </div>
 
+          {/* Buscar un proveedor existente por nombre o NIT (rellena los campos). */}
+          <div className="campo" style={{ position: "relative" }}>
+            <label>Buscar proveedor (nombre o NIT)</label>
+            <input
+              value={provBuscar}
+              onChange={(e) => setProvBuscar(e.target.value)}
+              placeholder="Escribe para reutilizar un proveedor existente…"
+            />
+            {provOpc.length > 0 && (
+              <div
+                className="lista-opciones"
+                style={{ position: "absolute", zIndex: 10, width: "100%", maxHeight: 220, overflowY: "auto" }}
+              >
+                {provOpc.map((p) => (
+                  <button
+                    type="button"
+                    key={p.id}
+                    className="opcion"
+                    onMouseDown={() => {
+                      setDocumento(p.documento);
+                      setNombre(p.nombre);
+                      setProvBuscar("");
+                      setProvOpc([]);
+                    }}
+                  >
+                    <strong>{p.nombre}</strong> · NIT {p.documento}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="grid-2">
             <div className="campo">
               <label>NIT / Documento proveedor *</label>
@@ -246,20 +300,15 @@ function ModalCrearCompra({ onCerrar, onCreado }: { onCerrar: () => void; onCrea
               <input value={nombre} onChange={(e) => setNombre(e.target.value)} required />
             </div>
           </div>
-          <div className="campo">
-            <label>Dirección del proveedor</label>
-            <input value={direccion} onChange={(e) => setDireccion(e.target.value)} />
-          </div>
 
           <h3 style={{ margin: "10px 0" }}>Conceptos</h3>
           {items.map((it, idx) => (
             <div key={idx} className="linea-item">
-              <select value={it.articuloId} onChange={(e) => actualizarItem(idx, "articuloId", e.target.value)}>
-                <option value="">Artículo…</option>
-                {articulos.map((a) => (
-                  <option key={a.id} value={a.id}>{a.codigo} · {a.nombre}</option>
-                ))}
-              </select>
+              <SelectorArticulo
+                articulos={articulos}
+                valor={it.articuloId}
+                onElegir={(id) => actualizarItem(idx, "articuloId", id)}
+              />
               <input
                 type="number" min="1" step="1" title="Cantidad" style={{ width: 80 }}
                 value={it.cantidad}

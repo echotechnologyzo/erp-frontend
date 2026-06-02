@@ -9,8 +9,10 @@ import * as XLSX from "xlsx";
 import {
   articulosApi,
   uploadsApi,
+  catalogosApi,
   type Articulo,
   type NuevoArticulo,
+  type Marca,
   type FilaImportArticulo,
 } from "../api/recursos";
 
@@ -156,6 +158,35 @@ export function Articulos() {
     }
   }
 
+  // --- Activar / desactivar un artículo ---
+  async function alternarEstado(a: Articulo) {
+    setError(null);
+    setAviso(null);
+    try {
+      await articulosApi.actualizar(a.id, { activo: !a.activo });
+      setAviso(`Artículo ${a.nombre} ${a.activo ? "desactivado" : "activado"}.`);
+      cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al cambiar el estado.");
+    }
+  }
+
+  // --- Eliminar un artículo (con confirmación) ---
+  async function eliminar(a: Articulo) {
+    if (!window.confirm(`¿Eliminar el artículo "${a.nombre}"? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+    setError(null);
+    setAviso(null);
+    try {
+      await articulosApi.eliminar(a.id);
+      setAviso(`Artículo ${a.nombre} eliminado.`);
+      cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al eliminar el artículo.");
+    }
+  }
+
   // --- Plantilla de Excel para importar artículos ---
   function descargarPlantilla() {
     const ejemplo = [
@@ -231,12 +262,13 @@ export function Articulos() {
                 <th>Garantía</th>
                 <th>Stock por sede</th>
                 <th>Stock total</th>
+                <th>Estado</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {articulos.map((a) => (
-                <tr key={a.id}>
+                <tr key={a.id} style={{ opacity: a.activo ? 1 : 0.55 }}>
                   <td>{a.codigo}</td>
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -270,19 +302,32 @@ export function Articulos() {
                     <strong>{a.stockTotal}</strong>
                   </td>
                   <td>
-                    <button
-                      className="btn-secundario"
-                      style={{ padding: "6px 12px" }}
-                      onClick={() => setEditar(a)}
-                    >
-                      Editar
-                    </button>
+                    <span className={a.activo ? "badge-nuevo" : "badge-sede"}>
+                      {a.activo ? "Activo" : "Inactivo"}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <button className="btn-secundario" style={{ padding: "6px 10px" }} onClick={() => setEditar(a)}>
+                        Editar
+                      </button>
+                      <button className="btn-secundario" style={{ padding: "6px 10px" }} onClick={() => alternarEstado(a)}>
+                        {a.activo ? "Desactivar" : "Activar"}
+                      </button>
+                      <button
+                        className="btn-secundario"
+                        style={{ padding: "6px 10px", color: "var(--echo-coral)", borderColor: "var(--echo-coral)" }}
+                        onClick={() => eliminar(a)}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
               {articulos.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="muted" style={{ textAlign: "center", padding: 24 }}>
+                  <td colSpan={9} className="muted" style={{ textAlign: "center", padding: 24 }}>
                     No hay artículos. Crea el primero con “Nuevo artículo”.
                   </td>
                 </tr>
@@ -308,8 +353,7 @@ export function Articulos() {
 
 // --------------------------------------------------------------------------
 // Modal de creación / edición de artículo. Permite cambiar nombre, código,
-// precios, garantía, descripción e imagen (por URL, con vista previa).
-// La marca se muestra como dato (no editable aquí, se asigna por importación).
+// marca, precios, garantía, descripción e imagen (por URL o subida).
 // --------------------------------------------------------------------------
 function ModalArticulo({
   articulo,
@@ -330,10 +374,18 @@ function ModalArticulo({
     tarifaNormal: articulo?.tarifaNormal ?? 0,
     garantiaMeses: articulo?.garantiaMeses ?? 6,
     urlFoto: articulo?.urlFoto ?? "",
+    marca: articulo?.marca?.nombre ?? "",
   });
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [subiendo, setSubiendo] = useState(false);
+  const [marcas, setMarcas] = useState<Marca[]>([]);
+
+  // Marcas existentes para sugerir en el campo (datalist). Se puede escribir una
+  // nueva: el backend la crea/reutiliza por nombre, igual que en la importación.
+  useEffect(() => {
+    catalogosApi.marcas().then(setMarcas).catch(() => setMarcas([]));
+  }, []);
 
   function set<K extends keyof NuevoArticulo>(campo: K, valor: NuevoArticulo[K]) {
     setForm((f) => ({ ...f, [campo]: valor }));
@@ -432,9 +484,25 @@ function ModalArticulo({
             </div>
           </div>
 
-          <div className="campo">
-            <label>Descripción</label>
-            <input value={form.descripcion ?? ""} onChange={(e) => set("descripcion", e.target.value)} />
+          <div className="grid-2">
+            <div className="campo">
+              <label>Marca</label>
+              <input
+                list="lista-marcas"
+                value={form.marca ?? ""}
+                onChange={(e) => set("marca", e.target.value)}
+                placeholder="Escribe o elige una marca…"
+              />
+              <datalist id="lista-marcas">
+                {marcas.map((m) => (
+                  <option key={m.id} value={m.nombre} />
+                ))}
+              </datalist>
+            </div>
+            <div className="campo">
+              <label>Descripción</label>
+              <input value={form.descripcion ?? ""} onChange={(e) => set("descripcion", e.target.value)} />
+            </div>
           </div>
 
           {/* Imagen del artículo: subir un archivo del PC o pegar una URL
@@ -473,10 +541,6 @@ function ModalArticulo({
               </button>
             </div>
           ) : null}
-
-          {articulo?.marca && (
-            <p className="muted">Marca: {articulo.marca.nombre}</p>
-          )}
 
           <div className="modal-acciones">
             <button type="button" className="btn-secundario" onClick={onCerrar}>

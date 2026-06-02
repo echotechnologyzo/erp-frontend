@@ -60,7 +60,6 @@ export function Proveedores() {
                 <th>Proveedor</th>
                 <th>Teléfono</th>
                 <th>Email</th>
-                <th>Dirección</th>
                 <th></th>
               </tr>
             </thead>
@@ -71,7 +70,6 @@ export function Proveedores() {
                   <td><strong>{p.nombre}</strong></td>
                   <td>{p.telefono ?? "—"}</td>
                   <td>{p.email ?? "—"}</td>
-                  <td>{p.direccion ?? "—"}</td>
                   <td>
                     <button className="btn-secundario" style={{ padding: "6px 12px" }} onClick={() => setEditar(p)}>
                       Editar
@@ -81,7 +79,7 @@ export function Proveedores() {
               ))}
               {lista.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="muted" style={{ textAlign: "center", padding: 24 }}>
+                  <td colSpan={5} className="muted" style={{ textAlign: "center", padding: 24 }}>
                     No hay proveedores. Crea el primero.
                   </td>
                 </tr>
@@ -119,7 +117,6 @@ function ModalProveedor({
     nombre: proveedor?.nombre ?? "",
     telefono: proveedor?.telefono ?? "",
     email: proveedor?.email ?? "",
-    direccion: proveedor?.direccion ?? "",
   });
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -168,10 +165,6 @@ function ModalProveedor({
               <label>Email</label>
               <input type="email" value={form.email ?? ""} onChange={(e) => set("email", e.target.value)} />
             </div>
-          </div>
-          <div className="campo">
-            <label>Dirección</label>
-            <input value={form.direccion ?? ""} onChange={(e) => set("direccion", e.target.value)} />
           </div>
           <div className="modal-acciones">
             <button type="button" className="btn-secundario" onClick={onCerrar}>Cancelar</button>

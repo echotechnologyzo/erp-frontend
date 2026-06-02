@@ -21,6 +21,7 @@ export interface Articulo {
   costo: number;
   garantiaMeses: number;
   urlFoto: string | null;
+  activo: boolean;
   categoria: { nombre: string } | null;
   marca: { nombre: string } | null;
   inventario: InventarioSede[];
@@ -38,6 +39,9 @@ export interface NuevoArticulo {
   tarifaMayorista?: number;
   garantiaMeses?: number;
   urlFoto?: string;
+  // Nombre de marca (el backend la crea/reutiliza). Alternativa a marcaId.
+  marca?: string;
+  activo?: boolean;
 }
 
 // Fila plana para importar artículos desde el Excel de Effi (claves ya
@@ -75,6 +79,8 @@ export const articulosApi = {
     api<Articulo>("/articulos", { method: "POST", body: JSON.stringify(datos) }),
   actualizar: (id: string, datos: Partial<NuevoArticulo>) =>
     api<Articulo>(`/articulos/${id}`, { method: "PUT", body: JSON.stringify(datos) }),
+  eliminar: (id: string) =>
+    api<{ ok: boolean }>(`/articulos/${id}`, { method: "DELETE" }),
   importar: (filas: FilaImportArticulo[]) =>
     api<ResumenImportArticulos>("/articulos/importar", {
       method: "POST",
@@ -169,8 +175,13 @@ export interface Sede {
   id: string;
   nombre: string;
 }
+export interface Marca {
+  id: string;
+  nombre: string;
+}
 export const catalogosApi = {
   sedes: () => api<Sede[]>("/catalogos/sedes"),
+  marcas: () => api<Marca[]>("/catalogos/marcas"),
 };
 
 // --- Compras (remisiones de compra) ---
@@ -307,7 +318,8 @@ export interface Proveedor {
   telefono: string | null;
   email: string | null;
 }
-export type NuevoProveedor = Omit<Proveedor, "id">;
+// La dirección ya no se captura en el formulario de proveedor.
+export type NuevoProveedor = Omit<Proveedor, "id" | "direccion">;
 
 export const proveedoresApi = {
   listar: (buscar = "") =>
@@ -345,6 +357,8 @@ export const empleadosApi = {
     api<Empleado>("/empleados", { method: "POST", body: JSON.stringify(datos) }),
   actualizar: (id: string, datos: NuevoEmpleado) =>
     api<Empleado>(`/empleados/${id}`, { method: "PUT", body: JSON.stringify(datos) }),
+  eliminar: (id: string) =>
+    api<{ ok: boolean }>(`/empleados/${id}`, { method: "DELETE" }),
 };
 
 // --- Remisiones de VENTA ---
