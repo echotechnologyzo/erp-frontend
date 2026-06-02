@@ -63,6 +63,22 @@ export function Remisiones() {
     }
   }
 
+  // Anular una remisión: devuelve el stock al inventario y la marca ANULADA.
+  async function anular(r: Remision) {
+    if (!window.confirm(`¿Anular la remisión ${r.documento}? Se devolverá el stock al inventario.`)) {
+      return;
+    }
+    setError(null);
+    setAviso(null);
+    try {
+      await remisionesApi.anular(r.id);
+      setAviso(`Remisión ${r.documento} anulada (stock devuelto al inventario).`);
+      cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al anular la remisión.");
+    }
+  }
+
   // --- Importación desde Excel ---
   async function onArchivoExcel(e: ChangeEvent<HTMLInputElement>) {
     const archivo = e.target.files?.[0];
@@ -180,9 +196,22 @@ export function Remisiones() {
                     <div className="muted">{pesos(r.comisionValor)}</div>
                   </td>
                   <td>
-                    <button className="btn-secundario" style={{ padding: "6px 12px" }} onClick={() => verPdf(r.id)}>
-                      Ver / PDF
-                    </button>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                      <button className="btn-secundario" style={{ padding: "6px 12px" }} onClick={() => verPdf(r.id)}>
+                        Ver / PDF
+                      </button>
+                      {r.estado === "ANULADA" ? (
+                        <span className="badge-sede">Anulada</span>
+                      ) : (
+                        <button
+                          className="btn-secundario"
+                          style={{ padding: "6px 12px", color: "var(--echo-coral)", borderColor: "var(--echo-coral)" }}
+                          onClick={() => anular(r)}
+                        >
+                          Anular
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
