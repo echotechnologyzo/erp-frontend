@@ -71,6 +71,7 @@ export function Articulos() {
   const [importando, setImportando] = useState(false);
   // null = cerrado · "nuevo" = crear · Articulo = editar ese artículo
   const [editar, setEditar] = useState<Articulo | "nuevo" | null>(null);
+  const [modalMarcas, setModalMarcas] = useState(false);
 
   // Carga la lista (se vuelve a llamar al buscar o tras crear un artículo).
   async function cargar() {
@@ -221,6 +222,9 @@ export function Articulos() {
           <button className="btn-secundario" onClick={descargarPlantilla}>
             Plantilla Excel
           </button>
+          <button className="btn-secundario" onClick={() => setModalMarcas(true)}>
+            Marcas
+          </button>
           <label
             className="btn-secundario"
             style={{ cursor: importando ? "wait" : "pointer", opacity: importando ? 0.6 : 1 }}
@@ -347,6 +351,101 @@ export function Articulos() {
           }}
         />
       )}
+
+      {modalMarcas && (
+        <ModalMarcas
+          onCerrar={() => {
+            setModalMarcas(false);
+            cargar(); // refresca por si algún artículo quedó sin marca
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// --------------------------------------------------------------------------
+// Modal para gestionar (eliminar) marcas. Al borrar una marca, los artículos
+// que la usaban quedan sin marca (no se eliminan).
+// --------------------------------------------------------------------------
+function ModalMarcas({ onCerrar }: { onCerrar: () => void }) {
+  const [marcas, setMarcas] = useState<Marca[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  async function cargar() {
+    setCargando(true);
+    try {
+      setMarcas(await catalogosApi.marcas());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al cargar marcas.");
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  useEffect(() => {
+    cargar();
+  }, []);
+
+  async function eliminar(m: Marca) {
+    if (!window.confirm(`¿Eliminar la marca "${m.nombre}"? Los artículos que la usen quedarán sin marca.`)) {
+      return;
+    }
+    setError(null);
+    setAviso(null);
+    try {
+      const r = await catalogosApi.eliminarMarca(m.id);
+      setAviso(
+        `Marca "${m.nombre}" eliminada` +
+          (r.articulosDesvinculados ? ` (${r.articulosDesvinculados} artículos quedaron sin marca)` : "") +
+          "."
+      );
+      cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al eliminar la marca.");
+    }
+  }
+
+  return (
+    <div className="modal-fondo" onClick={onCerrar}>
+      <div className="modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
+        <h2>Marcas</h2>
+        {error && <div className="alerta-error">{error}</div>}
+        {aviso && <div className="alerta-ok">{aviso}</div>}
+        {cargando ? (
+          <p>Cargando…</p>
+        ) : (
+          <div style={{ maxHeight: 360, overflowY: "auto" }}>
+            {marcas.map((m) => (
+              <div
+                key={m.id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "8px 0",
+                  borderBottom: "1px solid #f0eeea",
+                }}
+              >
+                <span><strong>{m.nombre}</strong></span>
+                <button
+                  className="btn-secundario"
+                  style={{ padding: "4px 10px", color: "var(--echo-coral)", borderColor: "var(--echo-coral)" }}
+                  onClick={() => eliminar(m)}
+                >
+                  Eliminar
+                </button>
+              </div>
+            ))}
+            {marcas.length === 0 && <p className="muted">No hay marcas registradas.</p>}
+          </div>
+        )}
+        <div className="modal-acciones">
+          <button type="button" className="btn-secundario" onClick={onCerrar}>Cerrar</button>
+        </div>
+      </div>
     </div>
   );
 }

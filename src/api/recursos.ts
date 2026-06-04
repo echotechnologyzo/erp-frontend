@@ -182,6 +182,10 @@ export interface Marca {
 export const catalogosApi = {
   sedes: () => api<Sede[]>("/catalogos/sedes"),
   marcas: () => api<Marca[]>("/catalogos/marcas"),
+  eliminarMarca: (id: string) =>
+    api<{ ok: boolean; articulosDesvinculados: number }>(`/catalogos/marcas/${id}`, {
+      method: "DELETE",
+    }),
 };
 
 // --- Compras (remisiones de compra) ---
