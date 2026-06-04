@@ -408,12 +408,33 @@ function ModalMarcas({ onCerrar }: { onCerrar: () => void }) {
     }
   }
 
+  // Unifica duplicadas y pasa todo a MAYÚSCULAS.
+  async function normalizar() {
+    if (!window.confirm("¿Pasar todas las marcas a MAYÚSCULAS y fusionar las duplicadas?")) {
+      return;
+    }
+    setError(null);
+    setAviso(null);
+    try {
+      const r = await catalogosApi.normalizarMarcas();
+      setAviso(`Listo: ${r.fusionadas} marcas fusionadas, ${r.renombradas} pasadas a mayúsculas.`);
+      cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al normalizar las marcas.");
+    }
+  }
+
   return (
     <div className="modal-fondo" onClick={onCerrar}>
       <div className="modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
-        <h2>Marcas</h2>
-        {error && <div className="alerta-error">{error}</div>}
-        {aviso && <div className="alerta-ok">{aviso}</div>}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+          <h2 style={{ margin: 0 }}>Marcas</h2>
+          <button type="button" className="btn-secundario" style={{ padding: "6px 12px" }} onClick={normalizar}>
+            Unificar duplicadas (MAYÚSCULAS)
+          </button>
+        </div>
+        {error && <div className="alerta-error" style={{ marginTop: 12 }}>{error}</div>}
+        {aviso && <div className="alerta-ok" style={{ marginTop: 12 }}>{aviso}</div>}
         {cargando ? (
           <p>Cargando…</p>
         ) : (

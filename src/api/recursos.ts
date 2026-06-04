@@ -186,6 +186,11 @@ export const catalogosApi = {
     api<{ ok: boolean; articulosDesvinculados: number }>(`/catalogos/marcas/${id}`, {
       method: "DELETE",
     }),
+  // Pasa todas las marcas a MAYÚSCULAS y fusiona las duplicadas.
+  normalizarMarcas: () =>
+    api<{ ok: boolean; fusionadas: number; renombradas: number }>("/catalogos/marcas/normalizar", {
+      method: "POST",
+    }),
 };
 
 // --- Compras (remisiones de compra) ---
