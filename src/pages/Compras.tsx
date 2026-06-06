@@ -16,6 +16,7 @@ import {
   type Proveedor,
   type NuevaCompraItem,
   type FilaImportCompra,
+  type EditarCompra,
 } from "../api/recursos";
 import { SelectorArticulo } from "../components/SelectorArticulo";
 
@@ -28,6 +29,7 @@ export function Compras() {
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [modal, setModal] = useState(false);
+  const [editar, setEditar] = useState<Compra | null>(null);
 
   async function cargar() {
     setCargando(true);
@@ -44,6 +46,22 @@ export function Compras() {
   useEffect(() => {
     cargar();
   }, []);
+
+  // --- Eliminar una compra (revierte el stock) ---
+  async function eliminar(c: Compra) {
+    if (!window.confirm(
+      `¿Eliminar la remisión de compra ${c.documento}? Se devolverá (saldrá) del inventario el stock que ingresó.`
+    )) return;
+    setError(null);
+    setAviso(null);
+    try {
+      await comprasApi.eliminar(c.id);
+      setAviso(`Remisión de compra ${c.documento} eliminada (stock revertido).`);
+      cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al eliminar la remisión de compra.");
+    }
+  }
 
   // --- Importación desde Excel ---
   async function onArchivoExcel(e: ChangeEvent<HTMLInputElement>) {
@@ -126,6 +144,7 @@ export function Compras() {
                 <th>Remisión prov.</th>
                 <th>Total</th>
                 <th>Estado</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -141,11 +160,25 @@ export function Compras() {
                   <td>{c.remisionProveedor ?? "—"}</td>
                   <td>{moneda(Number(c.total))}</td>
                   <td><span className="badge-sede">Pago total</span></td>
+                  <td>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <button className="btn-secundario" style={{ padding: "6px 10px" }} onClick={() => setEditar(c)}>
+                        Editar
+                      </button>
+                      <button
+                        className="btn-secundario"
+                        style={{ padding: "6px 10px", color: "var(--echo-coral)", borderColor: "var(--echo-coral)" }}
+                        onClick={() => eliminar(c)}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {compras.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="muted" style={{ textAlign: "center", padding: 24 }}>
+                  <td colSpan={8} className="muted" style={{ textAlign: "center", padding: 24 }}>
                     No hay remisiones. Crea una o importa desde Excel.
                   </td>
                 </tr>
@@ -156,6 +189,132 @@ export function Compras() {
       )}
 
       {modal && <ModalCrearCompra onCerrar={() => setModal(false)} onCreado={() => { setModal(false); cargar(); }} />}
+
+      {editar && (
+        <ModalEditarCompra
+          compra={editar}
+          onCerrar={() => setEditar(null)}
+          onGuardado={() => { setEditar(null); cargar(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// --------------------------------------------------------------------------
+// Modal de edición de la CABECERA de una compra (proveedor, remisión del
+// proveedor, observación). Las líneas/cantidades NO se editan aquí porque ya
+// movieron inventario; para cambiarlas: eliminar la compra y volver a crearla.
+// --------------------------------------------------------------------------
+function ModalEditarCompra({
+  compra,
+  onCerrar,
+  onGuardado,
+}: {
+  compra: Compra;
+  onCerrar: () => void;
+  onGuardado: () => void;
+}) {
+  const [documento, setDocumento] = useState(compra.proveedorDocumento);
+  const [nombre, setNombre] = useState(compra.proveedor);
+  const [remisionProveedor, setRemisionProveedor] = useState(compra.remisionProveedor ?? "");
+  const [observacion, setObservacion] = useState(compra.observacion ?? "");
+  const [provBuscar, setProvBuscar] = useState("");
+  const [provOpc, setProvOpc] = useState<Proveedor[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(async () => {
+      if (provBuscar.trim().length < 2) { setProvOpc([]); return; }
+      try { setProvOpc(await proveedoresApi.listar(provBuscar)); } catch { setProvOpc([]); }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [provBuscar]);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setGuardando(true);
+    try {
+      const datos: EditarCompra = {
+        proveedor: { documento, nombre },
+        remisionProveedor: remisionProveedor || undefined,
+        observacion: observacion || undefined,
+      };
+      await comprasApi.editar(compra.id, datos);
+      onGuardado();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al guardar la remisión de compra.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="modal-fondo" onClick={onCerrar}>
+      <div className="modal" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+        <h2>Editar remisión de compra {compra.documento}</h2>
+        <form onSubmit={onSubmit}>
+          {error && <div className="alerta-error">{error}</div>}
+
+          {/* Buscar proveedor existente por nombre o NIT */}
+          <div className="campo" style={{ position: "relative" }}>
+            <label>Buscar proveedor (nombre o NIT)</label>
+            <input
+              value={provBuscar}
+              onChange={(e) => setProvBuscar(e.target.value)}
+              placeholder="Escribe para reemplazar el proveedor…"
+            />
+            {provOpc.length > 0 && (
+              <div className="lista-opciones" style={{ position: "absolute", zIndex: 10, width: "100%", maxHeight: 220, overflowY: "auto" }}>
+                {provOpc.map((p) => (
+                  <button
+                    type="button"
+                    key={p.id}
+                    className="opcion"
+                    onMouseDown={() => { setDocumento(p.documento); setNombre(p.nombre); setProvBuscar(""); setProvOpc([]); }}
+                  >
+                    <strong>{p.nombre}</strong> · NIT {p.documento}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="grid-2">
+            <div className="campo">
+              <label>NIT / Documento proveedor *</label>
+              <input value={documento} onChange={(e) => setDocumento(e.target.value)} required />
+            </div>
+            <div className="campo">
+              <label>Nombre proveedor *</label>
+              <input value={nombre} onChange={(e) => setNombre(e.target.value)} required />
+            </div>
+          </div>
+
+          <div className="campo">
+            <label>Remisión del proveedor</label>
+            <input value={remisionProveedor} onChange={(e) => setRemisionProveedor(e.target.value)} />
+          </div>
+          <div className="campo">
+            <label>Observación</label>
+            <input value={observacion} onChange={(e) => setObservacion(e.target.value)} />
+          </div>
+
+          <p className="muted">
+            Para cambiar artículos o cantidades, elimina esta remisión y vuelve a crearla
+            (eso ajusta el inventario correctamente).
+          </p>
+
+          <div className="modal-acciones">
+            <button type="button" className="btn-secundario" onClick={onCerrar}>Cancelar</button>
+            <button type="submit" className="btn-primario" style={{ width: "auto" }} disabled={guardando}>
+              {guardando ? "Guardando…" : "Guardar cambios"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

@@ -205,10 +205,18 @@ export interface Compra {
   proveedor: string;
   proveedorDocumento: string; // NIT/documento del proveedor
   remisionProveedor: string | null;
+  observacion: string | null;
   subtotal: number;
   total: number;
   estado: string;
   items: number;
+}
+
+// Edición de la cabecera de una compra (no toca las líneas).
+export interface EditarCompra {
+  proveedor: { documento: string; nombre: string };
+  remisionProveedor?: string;
+  observacion?: string;
 }
 
 export interface NuevaCompraItem {
@@ -250,6 +258,10 @@ export const comprasApi = {
       method: "POST",
       body: JSON.stringify({ filas }),
     }),
+  editar: (id: string, datos: EditarCompra) =>
+    api<{ id: string }>(`/compras/${id}`, { method: "PUT", body: JSON.stringify(datos) }),
+  eliminar: (id: string) =>
+    api<{ ok: boolean }>(`/compras/${id}`, { method: "DELETE" }),
 };
 
 // --- Clientes ---
