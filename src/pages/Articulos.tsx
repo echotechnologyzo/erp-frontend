@@ -208,7 +208,26 @@ export function Articulos() {
       setAviso(`Se eliminaron ${r.eliminados} artículos. Ya puedes importar el catálogo actualizado.`);
       cargar();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Error al borrar los artículos.");
+      const msg = e instanceof Error ? e.message : "Error al borrar los artículos.";
+      // Si está bloqueado por documentos (remisiones/compras/traslados), ofrecer
+      // el borrado total que también los limpia (útil durante la migración).
+      if (/documentos|remisiones|compras|traslados/i.test(msg)) {
+        if (window.confirm(
+          msg +
+          "\n\n¿Hacer un BORRADO TOTAL que elimine también esas remisiones, compras y traslados? " +
+          "Solo recomendado durante la migración. Esta acción no se puede deshacer."
+        )) {
+          try {
+            const r = await articulosApi.eliminarTodos(true);
+            setAviso(`Borrado total: ${r.eliminados} artículos y todos los documentos de prueba eliminados. Ya puedes reimportar.`);
+            cargar();
+          } catch (e2) {
+            setError(e2 instanceof Error ? e2.message : "Error en el borrado total.");
+          }
+        }
+      } else {
+        setError(msg);
+      }
     }
   }
 

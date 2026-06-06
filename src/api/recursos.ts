@@ -82,8 +82,12 @@ export const articulosApi = {
   eliminar: (id: string) =>
     api<{ ok: boolean }>(`/articulos/${id}`, { method: "DELETE" }),
   // Borrado masivo del catálogo (limpiar para reimportar). Solo ADMIN.
-  eliminarTodos: () =>
-    api<{ ok: boolean; eliminados: number }>("/articulos", { method: "DELETE" }),
+  // forzar=true limpia también remisiones/compras/traslados (reset de migración).
+  eliminarTodos: (forzar = false) =>
+    api<{ ok: boolean; eliminados: number; documentosBorrados: boolean }>(
+      `/articulos${forzar ? "?forzar=true" : ""}`,
+      { method: "DELETE" }
+    ),
   importar: (filas: FilaImportArticulo[]) =>
     api<ResumenImportArticulos>("/articulos/importar", {
       method: "POST",
