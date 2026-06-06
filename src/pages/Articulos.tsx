@@ -7,6 +7,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import * as XLSX from "xlsx";
 import { useAuth } from "../auth/AuthContext";
+import { leerLibroExcel } from "../utils/excel";
 import {
   articulosApi,
   uploadsApi,
@@ -105,8 +106,7 @@ export function Articulos() {
     setAviso(null);
     setImportando(true);
     try {
-      const buffer = await archivo.arrayBuffer();
-      const libro = XLSX.read(buffer, { type: "array" });
+      const libro = await leerLibroExcel(archivo);
       const hoja = libro.Sheets[libro.SheetNames[0]];
       // Matriz (array de arrays) para mapear por posición de columna.
       const matriz = XLSX.utils.sheet_to_json<(string | number)[]>(hoja, {
