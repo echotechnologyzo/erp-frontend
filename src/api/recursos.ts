@@ -81,6 +81,9 @@ export const articulosApi = {
     api<Articulo>(`/articulos/${id}`, { method: "PUT", body: JSON.stringify(datos) }),
   eliminar: (id: string) =>
     api<{ ok: boolean }>(`/articulos/${id}`, { method: "DELETE" }),
+  // Borrado masivo del catálogo (limpiar para reimportar). Solo ADMIN.
+  eliminarTodos: () =>
+    api<{ ok: boolean; eliminados: number }>("/articulos", { method: "DELETE" }),
   importar: (filas: FilaImportArticulo[]) =>
     api<ResumenImportArticulos>("/articulos/importar", {
       method: "POST",
