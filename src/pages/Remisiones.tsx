@@ -254,6 +254,7 @@ export function Remisiones() {
 // Modal de creación de remisión de venta.
 // --------------------------------------------------------------------------
 function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCreado: () => void }) {
+  const { usuario } = useAuth(); // para prellenar la sede asignada al usuario
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [articulos, setArticulos] = useState<Articulo[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -278,7 +279,11 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
   useEffect(() => {
     catalogosApi.sedes().then((s) => {
       setSedes(s);
-      if (s[0]) setSedeId(s[0].id);
+      // Sede por defecto = la asignada al usuario; si no tiene, la primera.
+      const propia = usuario?.sedeId && s.some((x) => x.id === usuario.sedeId)
+        ? usuario.sedeId
+        : s[0]?.id;
+      if (propia) setSedeId(propia);
     });
     articulosApi.listar().then(setArticulos);
     empleadosApi.listar().then(setEmpleados).catch(() => setEmpleados([]));
