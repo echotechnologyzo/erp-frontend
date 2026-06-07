@@ -194,7 +194,7 @@ export function Remisiones() {
                 <th>Cliente</th>
                 <th>Vendedor</th>
                 <th>Total</th>
-                <th>Comisión</th>
+                {esAdmin && <th>Comisión</th>}
                 <th></th>
               </tr>
             </thead>
@@ -210,12 +210,14 @@ export function Remisiones() {
                   </td>
                   <td>{r.vendedor}</td>
                   <td>{pesos(r.total)}</td>
-                  <td>
-                    <span className={r.esRecompra ? "badge-sede" : "badge-nuevo"}>
-                      {r.esRecompra ? "Recompra" : "Nuevo"} {Number(r.comisionPct)}%
-                    </span>
-                    <div className="muted">{pesos(r.comisionValor)}</div>
-                  </td>
+                  {esAdmin && (
+                    <td>
+                      <span className={r.esRecompra ? "badge-sede" : "badge-nuevo"}>
+                        {r.esRecompra ? "Recompra" : "Nuevo"} {Number(r.comisionPct)}%
+                      </span>
+                      <div className="muted">{pesos(r.comisionValor)}</div>
+                    </td>
+                  )}
                   <td>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
                       <button className="btn-secundario" style={{ padding: "6px 12px" }} onClick={() => verPdf(r.id)}>
@@ -241,7 +243,7 @@ export function Remisiones() {
               ))}
               {lista.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="muted" style={{ textAlign: "center", padding: 24 }}>
+                  <td colSpan={esAdmin ? 8 : 7} className="muted" style={{ textAlign: "center", padding: 24 }}>
                     No hay remisiones. Crea una o importa desde Excel.
                   </td>
                 </tr>
@@ -284,6 +286,7 @@ function ModalCrearRemision({
   onCreado: (id?: string) => void;
 }) {
   const { usuario } = useAuth(); // para prellenar la sede asignada al usuario
+  const esAdmin = usuario?.rol === "ADMIN"; // el operador no ve la comisión
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [articulos, setArticulos] = useState<Articulo[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -522,7 +525,8 @@ function ModalCrearRemision({
 
           <div className="total-neto">TOTAL NETO: <strong>{pesos(total)}</strong></div>
           <p className="muted">
-            Moneda: COP · Forma de pago: Contado · Comisión: 4% cliente nuevo / 1% recompra (automática).
+            Moneda: COP · Forma de pago: Contado
+            {esAdmin ? " · Comisión: 4% cliente nuevo / 1% recompra (automática)." : "."}
           </p>
 
           <div className="modal-acciones">

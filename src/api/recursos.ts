@@ -301,6 +301,7 @@ export interface Cliente {
   vendedor: string | null;
   observacion: string | null;
   activo: boolean;
+  compraPrevia: boolean; // ya tenía compras antes (recompra)
 }
 
 // Datos editables de un cliente (crear/editar).
@@ -345,6 +346,9 @@ export const clientesApi = {
     }),
   eliminar: (id: string) =>
     api<{ ok: boolean }>(`/clientes/${id}`, { method: "DELETE" }),
+  // Marca TODOS los clientes existentes como "con compra previa" (recompra).
+  marcarRecompra: () =>
+    api<{ ok: boolean; actualizados: number }>("/clientes/marcar-recompra", { method: "POST" }),
 };
 
 // --- Proveedores ---

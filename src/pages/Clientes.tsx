@@ -9,6 +9,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import * as XLSX from "xlsx";
 import { leerLibroExcel } from "../utils/excel";
+import { useAuth } from "../auth/AuthContext";
 import {
   clientesApi,
   empleadosApi,
@@ -65,6 +66,8 @@ function mapearEncabezados(encabezados: string[]): Record<string, number> {
 }
 
 export function Clientes() {
+  const { usuario } = useAuth();
+  const esAdmin = usuario?.rol === "ADMIN";
   const [lista, setLista] = useState<Cliente[]>([]);
   const [total, setTotal] = useState(0);
   const [pagina, setPagina] = useState(1);
@@ -110,6 +113,23 @@ export function Clientes() {
       cargar();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al eliminar el cliente.");
+    }
+  }
+
+  // --- Marcar todos los clientes como recompra (tras la migración) ---
+  async function marcarRecompra() {
+    if (!window.confirm(
+      "Marcar TODOS los clientes existentes como 'con compra previa' (recompra, comisión 1%). " +
+      "Úsalo una vez después de migrar los clientes de Effi. ¿Continuar?"
+    )) return;
+    setError(null);
+    setAviso(null);
+    try {
+      const r = await clientesApi.marcarRecompra();
+      setAviso(`${r.actualizados} clientes marcados como recompra.`);
+      cargar(pagina, buscar);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al marcar los clientes.");
     }
   }
 
@@ -281,6 +301,11 @@ export function Clientes() {
             {importando ? "Importando…" : "Importar Excel (Effi)"}
             <input type="file" accept=".xls,.xlsx" hidden disabled={importando} onChange={onArchivoExcel} />
           </label>
+          {esAdmin && (
+            <button className="btn-secundario" onClick={marcarRecompra}>
+              Marcar recompra
+            </button>
+          )}
           <button className="btn-primario" style={{ width: "auto" }} onClick={() => setEditar("nuevo")}>
             + Crear cliente
           </button>
@@ -434,6 +459,7 @@ export function ModalCliente({
     moneda: cliente?.moneda ?? "COP",
     vendedor: cliente?.vendedor ?? "",
     observacion: cliente?.observacion ?? "",
+    compraPrevia: cliente?.compraPrevia ?? false,
   });
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -553,6 +579,18 @@ export function ModalCliente({
             {empleados.length === 0 && (
               <small className="muted">No hay empleados aún. Créalos en la pantalla Empleados.</small>
             )}
+          </div>
+
+          <div className="campo">
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={form.compraPrevia ?? false}
+                onChange={(e) => set("compraPrevia", e.target.checked)}
+                style={{ width: "auto" }}
+              />
+              Cliente con compras previas (recompra · comisión 1%)
+            </label>
           </div>
 
           <p className="muted">Moneda: COP · Forma de pago: Contado</p>
