@@ -22,6 +22,7 @@ export interface Articulo {
   garantiaMeses: number;
   urlFoto: string | null;
   activo: boolean;
+  esTercero: boolean; // flete u otro valor a terceros (no inventario/venta/utilidad)
   categoria: { nombre: string } | null;
   marca: { nombre: string } | null;
   inventario: InventarioSede[];
@@ -42,6 +43,8 @@ export interface NuevoArticulo {
   // Nombre de marca (el backend la crea/reutiliza). Alternativa a marcaId.
   marca?: string;
   activo?: boolean;
+  // Valor a terceros (flete): no controla inventario ni cuenta como venta.
+  esTercero?: boolean;
 }
 
 // Fila plana para importar artículos desde el Excel de Effi (claves ya

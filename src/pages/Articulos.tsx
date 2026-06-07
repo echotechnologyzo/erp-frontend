@@ -495,6 +495,7 @@ function ModalArticulo({
     garantiaMeses: articulo?.garantiaMeses ?? 6,
     urlFoto: articulo?.urlFoto ?? "",
     marca: articulo?.marca?.nombre ?? "",
+    esTercero: articulo?.esTercero ?? false,
   });
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
@@ -623,6 +624,19 @@ function ModalArticulo({
               <label>Descripción</label>
               <input value={form.descripcion ?? ""} onChange={(e) => set("descripcion", e.target.value)} />
             </div>
+          </div>
+
+          {/* Valor a terceros (flete): sin inventario y sin contar en ventas/utilidad */}
+          <div className="campo">
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={form.esTercero ?? false}
+                onChange={(e) => set("esTercero", e.target.checked)}
+                style={{ width: "auto" }}
+              />
+              Valor a terceros (p. ej. flete): no controla inventario ni cuenta como venta/utilidad
+            </label>
           </div>
 
           {/* Imagen del artículo: subir un archivo del PC o pegar una URL

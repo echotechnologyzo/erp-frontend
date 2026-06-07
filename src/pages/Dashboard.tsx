@@ -115,6 +115,10 @@ export function Dashboard() {
           {esAdmin && <Link id="comisiones">Comisiones</Link>}
           {esAdmin && <Link id="reportes">Reportes</Link>}
         </nav>
+        {/* Cerrar sesión siempre visible, al pie de la barra lateral */}
+        <button className="btn-salir-side" onClick={logout}>
+          Cerrar sesión
+        </button>
       </aside>
 
       <main className="dash-main">

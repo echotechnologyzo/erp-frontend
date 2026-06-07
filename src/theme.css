@@ -172,6 +172,24 @@ button {
   background: var(--echo-negro);
   color: #fff;
   padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Botón de cerrar sesión al pie de la barra lateral (siempre visible) */
+.btn-salir-side {
+  margin-top: auto;
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-family: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.btn-salir-side:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .dash-sidebar .logo {
