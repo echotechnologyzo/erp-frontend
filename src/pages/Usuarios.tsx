@@ -249,7 +249,7 @@ function ModalCrearUsuario({
   }
 
   return (
-    <div className="modal-fondo" onClick={onCerrar}>
+    <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
         <h2>+ Crear usuario</h2>
         <form onSubmit={onSubmit}>
@@ -349,7 +349,7 @@ function ModalEditarUsuario({
   }
 
   return (
-    <div className="modal-fondo" onClick={onCerrar}>
+    <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
         <h2>Editar usuario</h2>
         <p className="muted" style={{ marginTop: -8 }}>{usuario.email}</p>
@@ -420,7 +420,7 @@ function ModalPassword({
   }
 
   return (
-    <div className="modal-fondo" onClick={onCerrar}>
+    <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 440 }} onClick={(e) => e.stopPropagation()}>
         <h2>Cambiar contraseña</h2>
         <p className="muted" style={{ marginTop: -8 }}>{usuario.nombre} · {usuario.email}</p>

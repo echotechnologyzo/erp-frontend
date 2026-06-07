@@ -425,7 +425,7 @@ function ModalMarcas({ onCerrar }: { onCerrar: () => void }) {
   }
 
   return (
-    <div className="modal-fondo" onClick={onCerrar}>
+    <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <h2 style={{ margin: 0 }}>Marcas</h2>
@@ -545,7 +545,7 @@ function ModalArticulo({
   }
 
   return (
-    <div className="modal-fondo" onClick={onCerrar}>
+    <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 680 }} onClick={(e) => e.stopPropagation()}>
         <h2>{esEdicion ? "Editar artículo" : "+ Crear nuevo artículo"}</h2>
         <form onSubmit={onSubmit}>

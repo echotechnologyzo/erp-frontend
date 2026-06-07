@@ -141,7 +141,7 @@ function ModalProveedor({
   }
 
   return (
-    <div className="modal-fondo" onClick={onCerrar}>
+    <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
         <h2>{proveedor ? "Editar proveedor" : "+ Crear proveedor"}</h2>
         <form onSubmit={onSubmit}>

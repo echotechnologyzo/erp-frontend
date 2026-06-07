@@ -253,7 +253,7 @@ function ModalEditarCompra({
   }
 
   return (
-    <div className="modal-fondo" onClick={onCerrar}>
+    <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
         <h2>Editar remisión de compra {compra.documento}</h2>
         <form onSubmit={onSubmit}>
@@ -401,7 +401,7 @@ function ModalCrearCompra({ onCerrar, onCreado }: { onCerrar: () => void; onCrea
   }
 
   return (
-    <div className="modal-fondo" onClick={onCerrar}>
+    <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 760 }} onClick={(e) => e.stopPropagation()}>
         <h2>+ Crear remisión de compra</h2>
         <form onSubmit={onSubmit}>

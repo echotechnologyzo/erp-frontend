@@ -465,7 +465,7 @@ export function ModalCliente({
   }
 
   return (
-    <div className="modal-fondo" onClick={onCerrar}>
+    <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 720 }} onClick={(e) => e.stopPropagation()}>
         <h2>{cliente ? "Editar cliente" : "+ Crear cliente"}</h2>
         <form onSubmit={onSubmit}>

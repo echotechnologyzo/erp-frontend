@@ -421,7 +421,10 @@ export interface Remision {
 // Detalle completo (para imprimir el PDF).
 export interface RemisionDetalleLinea {
   item: number;
+  articuloId: string;
   ref: string;
+  nombre: string;
+  esTercero: boolean;
   descripcion: string;
   cantidad: number;
   precioUnitario: number;
@@ -436,6 +439,8 @@ export interface RemisionCompleta {
   fecha: string;
   vencimiento: string | null;
   estado: string;
+  sedeId: string;
+  clienteId: string;
   sede: { nombre: string; direccion: string | null; telefono: string | null };
   cliente: {
     nombre: string;

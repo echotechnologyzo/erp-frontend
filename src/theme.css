@@ -776,6 +776,14 @@ button {
   color: var(--echo-gris);
   font-weight: 300;
 }
+/* Logo (imagen) en el encabezado de la remisión imprimible */
+.rp-logo-img {
+  width: 115px;
+  height: auto;
+  object-fit: contain;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
 .rp-emisor {
   text-align: center;
 }

@@ -176,7 +176,7 @@ function ModalEmpleado({
   }
 
   return (
-    <div className="modal-fondo" onClick={onCerrar}>
+    <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
         <h2>{empleado ? "Editar empleado" : "+ Crear empleado"}</h2>
         <form onSubmit={onSubmit}>

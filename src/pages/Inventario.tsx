@@ -214,7 +214,7 @@ function ModalAjuste({
   }
 
   return (
-    <div className="modal-fondo" onClick={onCerrar}>
+    <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
         <h2>Ajustar existencias</h2>
         <p className="muted" style={{ marginTop: -10 }}>

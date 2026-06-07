@@ -36,6 +36,7 @@ export function Remisiones() {
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [modal, setModal] = useState(false);
+  const [duplicarBase, setDuplicarBase] = useState<RemisionCompleta | null>(null);
   const [imprimir, setImprimir] = useState<RemisionCompleta | null>(null);
   const [modalConsec, setModalConsec] = useState(false);
   const { usuario } = useAuth();
@@ -64,6 +65,17 @@ export function Remisiones() {
       setImprimir(await remisionesApi.obtener(id));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al abrir la remisión.");
+    }
+  }
+
+  // Duplicar: trae los datos de la remisión y abre el formulario precargado.
+  async function duplicar(r: Remision) {
+    setError(null);
+    try {
+      const completa = await remisionesApi.obtener(r.id);
+      setDuplicarBase(completa);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al duplicar la remisión.");
     }
   }
 
@@ -209,6 +221,9 @@ export function Remisiones() {
                       <button className="btn-secundario" style={{ padding: "6px 12px" }} onClick={() => verPdf(r.id)}>
                         Ver / PDF
                       </button>
+                      <button className="btn-secundario" style={{ padding: "6px 12px" }} onClick={() => duplicar(r)}>
+                        Duplicar
+                      </button>
                       {r.estado === "ANULADA" ? (
                         <span className="badge-sede">Anulada</span>
                       ) : (
@@ -236,10 +251,16 @@ export function Remisiones() {
         </div>
       )}
 
-      {modal && (
+      {(modal || duplicarBase) && (
         <ModalCrearRemision
-          onCerrar={() => setModal(false)}
-          onCreado={() => { setModal(false); cargar(); }}
+          base={duplicarBase}
+          onCerrar={() => { setModal(false); setDuplicarBase(null); }}
+          onCreado={(id) => {
+            setModal(false);
+            setDuplicarBase(null);
+            cargar();
+            if (id) verPdf(id); // abre el PDF inmediatamente para imprimir/guardar
+          }}
         />
       )}
 
@@ -253,33 +274,57 @@ export function Remisiones() {
 // --------------------------------------------------------------------------
 // Modal de creación de remisión de venta.
 // --------------------------------------------------------------------------
-function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCreado: () => void }) {
+function ModalCrearRemision({
+  base,
+  onCerrar,
+  onCreado,
+}: {
+  base?: RemisionCompleta | null; // si viene, se DUPLICA esa remisión
+  onCerrar: () => void;
+  onCreado: (id?: string) => void;
+}) {
   const { usuario } = useAuth(); // para prellenar la sede asignada al usuario
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [articulos, setArticulos] = useState<Articulo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
 
-  const [sedeId, setSedeId] = useState("");
-  const [vendedor, setVendedor] = useState("");
-  const [medioPago, setMedioPago] = useState("");
-  const [observacion, setObservacion] = useState("");
+  const [sedeId, setSedeId] = useState(base?.sedeId ?? "");
+  const [vendedor, setVendedor] = useState(base?.vendedor ?? "");
+  const [medioPago, setMedioPago] = useState(base?.medioPago ?? "");
+  const [observacion, setObservacion] = useState(base?.observacion ?? "");
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
 
-  // Buscador de cliente.
+  // Buscador de cliente. Si duplicamos, precargamos el cliente de la base.
   const [clienteBuscar, setClienteBuscar] = useState("");
   const [clienteOpc, setClienteOpc] = useState<Cliente[]>([]);
-  const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [cliente, setCliente] = useState<Cliente | null>(
+    base
+      ? ({ id: base.clienteId, nombre: base.cliente.nombre, documento: base.cliente.documento } as Cliente)
+      : null
+  );
   const [crearCliente, setCrearCliente] = useState(false); // abre el modal rápido de alta
 
-  const [items, setItems] = useState<NuevaRemisionItem[]>([
-    { articuloId: "", cantidad: 1, precioUnitario: 0 },
-  ]);
+  const [items, setItems] = useState<NuevaRemisionItem[]>(
+    base && base.detalles.length
+      ? base.detalles.map((d) => ({
+          articuloId: d.articuloId,
+          cantidad: Number(d.cantidad),
+          precioUnitario: Number(d.precioUnitario),
+          descuento: Number(d.descuento),
+          garantiaMeses: d.garantiaMeses,
+        }))
+      : [{ articuloId: "", cantidad: 1, precioUnitario: 0 }]
+  );
 
   useEffect(() => {
     catalogosApi.sedes().then((s) => {
       setSedes(s);
-      // Sede por defecto = la asignada al usuario; si no tiene, la primera.
+      // Al duplicar, conserva la sede de la base; si no, la del usuario / la primera.
+      if (base?.sedeId) {
+        setSedeId(base.sedeId);
+        return;
+      }
       const propia = usuario?.sedeId && s.some((x) => x.id === usuario.sedeId)
         ? usuario.sedeId
         : s[0]?.id;
@@ -336,7 +381,7 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
     }
     setGuardando(true);
     try {
-      await remisionesApi.crear({
+      const creada = await remisionesApi.crear({
         sedeId,
         clienteId: cliente.id,
         vendedor: vendedor || undefined,
@@ -344,7 +389,7 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
         observacion: observacion || undefined,
         items,
       });
-      onCreado();
+      onCreado(creada.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al crear la remisión.");
     } finally {
@@ -354,9 +399,9 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
 
   return (
     <>
-    <div className="modal-fondo" onClick={onCerrar}>
+    <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 820 }} onClick={(e) => e.stopPropagation()}>
-        <h2>+ Crear remisión de venta</h2>
+        <h2>{base ? "+ Duplicar remisión de venta" : "+ Crear remisión de venta"}</h2>
         <form onSubmit={onSubmit}>
           {error && <div className="alerta-error">{error}</div>}
 
@@ -558,7 +603,7 @@ function ModalConsecutivos({ onCerrar }: { onCerrar: () => void }) {
   }
 
   return (
-    <div className="modal-fondo" onClick={onCerrar}>
+    <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
         <h2>Consecutivos de remisión por sede</h2>
         <p className="muted">
@@ -614,7 +659,7 @@ const EMISOR = {
   nit: "1017175943",
   regimen: "Régimen ordinario No responsable de IVA",
   telefonos: "3207548718",
-  email: "echotechnologyzo@gmail.com",
+  email: "echotecnologia@echotecnologia.co",
   web: "echotecnologia.co",
 };
 
@@ -622,22 +667,37 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
   const ref = useRef<HTMLDivElement>(null);
   const fechaTxt = (s: string | null) => (s ? new Date(s).toLocaleString("es-CO") : "—");
   const totalUnidades = r.detalles.reduce((a, d) => a + Number(d.cantidad), 0);
-  // Si todas las líneas comparten la misma garantía, mostramos un texto único.
-  const garantias = [...new Set(r.detalles.map((d) => d.garantiaMeses))];
+  // La garantía solo aplica a productos (los valores a terceros, p. ej. flete,
+  // no llevan garantía). Si todas comparten meses, mostramos un texto único.
+  const conGarantia = r.detalles.filter((d) => !d.esTercero);
+  const garantias = [...new Set(conGarantia.map((d) => d.garantiaMeses))];
   const dirEmisor = r.sede.direccion ?? "Antioquia / Medellín / Carrera 55 #12Sur 09 Torre 3 Apto 9920";
+
+  // Imprime/guarda como PDF; el nombre del archivo sale del título del documento,
+  // así que lo fijamos a "Remisión <No.>" y lo restauramos al terminar.
+  function imprimir() {
+    const tituloPrevio = document.title;
+    document.title = `Remisión ${r.documento}`;
+    const restaurar = () => {
+      document.title = tituloPrevio;
+      window.removeEventListener("afterprint", restaurar);
+    };
+    window.addEventListener("afterprint", restaurar);
+    window.print();
+  }
 
   return (
     // OJO: NO poner "no-print" en este contenedor: al imprimir, display:none en
     // un ancestro oculta también el documento (.remision-print) y el PDF sale en
     // blanco. La impresión se controla con visibility en @media print; aquí solo
     // marcamos como no-print la barra de botones.
-    <div className="modal-fondo" onClick={onCerrar}>
+    <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 900, maxHeight: "92vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-acciones no-print" style={{ justifyContent: "space-between", marginTop: 0, marginBottom: 12 }}>
           <h2 style={{ margin: 0 }}>Remisión {r.documento}</h2>
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn-secundario" onClick={onCerrar}>Cerrar</button>
-            <button className="btn-primario" style={{ width: "auto" }} onClick={() => window.print()}>
+            <button className="btn-primario" style={{ width: "auto" }} onClick={imprimir}>
               Imprimir / Guardar PDF
             </button>
           </div>
@@ -647,7 +707,13 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
         <div className="remision-print" ref={ref}>
           {r.estado === "ANULADA" && <div className="rp-marca-anulada">ANULADA</div>}
           <div className="rp-cab">
-            <div className="rp-logo">ECHO<span>Tecnología en Casa</span></div>
+            <img
+              src="/logo-echo.png"
+              alt="ECHO Tecnología en Casa"
+              className="rp-logo-img"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+            />
+
             <div className="rp-emisor">
               <h1>{EMISOR.nombre}</h1>
               <div className="rp-rep">{EMISOR.representante}</div>
@@ -735,11 +801,16 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
             </tbody>
           </table>
 
-          {/* Garantía */}
+          {/* Garantía (solo productos; los valores a terceros no llevan) */}
           <div className="rp-garantia">
-            ¡Muchas gracias por tu compra! {garantias.length === 1
-              ? `Todos nuestros productos cuentan con garantía de ${garantias[0]} meses.`
-              : "Garantía por producto: " + r.detalles.map((d) => `${d.ref} (${d.garantiaMeses}m)`).join(", ") + "."}
+            ¡Muchas gracias por tu compra!{" "}
+            {conGarantia.length === 0
+              ? ""
+              : garantias.length === 1
+                ? `Todos nuestros productos cuentan con garantía de ${garantias[0]} meses.`
+                : "Garantía por producto: " +
+                  conGarantia.map((d) => `${d.nombre} (${d.garantiaMeses} meses)`).join(", ") +
+                  "."}
           </div>
 
           {/* Firmas */}
