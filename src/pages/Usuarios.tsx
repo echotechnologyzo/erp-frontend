@@ -10,6 +10,7 @@ import {
   catalogosApi,
   type Usuario,
   type NuevoUsuario,
+  type EditarUsuario,
   type Sede,
 } from "../api/recursos";
 
@@ -21,6 +22,7 @@ export function Usuarios() {
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [modal, setModal] = useState(false);
+  const [editar, setEditar] = useState<Usuario | null>(null); // usuario en edición
   const [passwordDe, setPasswordDe] = useState<Usuario | null>(null); // usuario al que cambiar contraseña
   const [ocupado, setOcupado] = useState<string | null>(null); // id en proceso (deshabilita botones)
 
@@ -129,6 +131,14 @@ export function Usuarios() {
                         <button
                           className="btn-secundario"
                           style={{ padding: "6px 10px" }}
+                          disabled={enProceso}
+                          onClick={() => setEditar(u)}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          className="btn-secundario"
+                          style={{ padding: "6px 10px" }}
                           disabled={esYo || enProceso}
                           title={esYo ? "No puedes desactivar tu propio usuario" : ""}
                           onClick={() => alternarEstado(u)}
@@ -174,6 +184,15 @@ export function Usuarios() {
           sedes={sedes}
           onCerrar={() => setModal(false)}
           onCreado={() => { setModal(false); cargar(); }}
+        />
+      )}
+
+      {editar && (
+        <ModalEditarUsuario
+          usuario={editar}
+          sedes={sedes}
+          onCerrar={() => setEditar(null)}
+          onGuardado={() => { setEditar(null); setAviso("Usuario actualizado."); cargar(); }}
         />
       )}
 
@@ -287,6 +306,87 @@ function ModalCrearUsuario({
 // Modal para que el ADMIN cambie la contraseña de un usuario.
 // Pide la nueva contraseña dos veces y aplica la misma política de seguridad.
 // --------------------------------------------------------------------------
+// --------------------------------------------------------------------------
+// Modal de EDICIÓN de usuario: nombre, rol y sede. (El email no se cambia aquí
+// y la contraseña tiene su propio botón.)
+// --------------------------------------------------------------------------
+function ModalEditarUsuario({
+  usuario,
+  sedes,
+  onCerrar,
+  onGuardado,
+}: {
+  usuario: Usuario;
+  sedes: Sede[];
+  onCerrar: () => void;
+  onGuardado: () => void;
+}) {
+  const [form, setForm] = useState<EditarUsuario>({
+    nombre: usuario.nombre,
+    rol: usuario.rol,
+    sedeId: usuario.sedeId ?? "",
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
+
+  function set<K extends keyof EditarUsuario>(campo: K, valor: EditarUsuario[K]) {
+    setForm((f) => ({ ...f, [campo]: valor }));
+  }
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setGuardando(true);
+    try {
+      // sedeId "" → null (quitar sede).
+      await usuariosApi.actualizar(usuario.id, { ...form, sedeId: form.sedeId || null });
+      onGuardado();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al actualizar el usuario.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="modal-fondo" onClick={onCerrar}>
+      <div className="modal" style={{ maxWidth: 540 }} onClick={(e) => e.stopPropagation()}>
+        <h2>Editar usuario</h2>
+        <p className="muted" style={{ marginTop: -8 }}>{usuario.email}</p>
+        <form onSubmit={onSubmit}>
+          {error && <div className="alerta-error">{error}</div>}
+          <div className="campo">
+            <label>Nombre *</label>
+            <input value={form.nombre ?? ""} onChange={(e) => set("nombre", e.target.value)} required />
+          </div>
+          <div className="grid-2">
+            <div className="campo">
+              <label>Rol *</label>
+              <select value={form.rol} onChange={(e) => set("rol", e.target.value as EditarUsuario["rol"])}>
+                <option value="OPERADOR">Operador</option>
+                <option value="ADMIN">Administrador</option>
+              </select>
+            </div>
+            <div className="campo">
+              <label>Sede</label>
+              <select value={form.sedeId ?? ""} onChange={(e) => set("sedeId", e.target.value)}>
+                <option value="">Sin asignar</option>
+                {sedes.map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="modal-acciones">
+            <button type="button" className="btn-secundario" onClick={onCerrar}>Cancelar</button>
+            <button type="submit" className="btn-primario" style={{ width: "auto" }} disabled={guardando}>
+              {guardando ? "Guardando…" : "Guardar cambios"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function ModalPassword({
   usuario,
   onCerrar,

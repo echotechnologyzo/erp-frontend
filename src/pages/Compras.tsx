@@ -19,6 +19,7 @@ import {
   type EditarCompra,
 } from "../api/recursos";
 import { SelectorArticulo } from "../components/SelectorArticulo";
+import { useAuth } from "../auth/AuthContext";
 
 const moneda = (v: number) =>
   new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(v);
@@ -323,6 +324,7 @@ function ModalEditarCompra({
 // Modal de creación de remisión de compra.
 // --------------------------------------------------------------------------
 function ModalCrearCompra({ onCerrar, onCreado }: { onCerrar: () => void; onCreado: () => void }) {
+  const { usuario } = useAuth(); // para prellenar la sede asignada al usuario
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [articulos, setArticulos] = useState<Articulo[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -343,7 +345,10 @@ function ModalCrearCompra({ onCerrar, onCreado }: { onCerrar: () => void; onCrea
   useEffect(() => {
     catalogosApi.sedes().then((s) => {
       setSedes(s);
-      if (s[0]) setSedeId(s[0].id);
+      const propia = usuario?.sedeId && s.some((x) => x.id === usuario.sedeId)
+        ? usuario.sedeId
+        : s[0]?.id;
+      if (propia) setSedeId(propia);
     });
     articulosApi.listar().then(setArticulos);
   }, []);

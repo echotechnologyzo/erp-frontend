@@ -551,10 +551,19 @@ export interface NuevoUsuario {
   sedeId?: string;
 }
 
+// Edición de un usuario (sin contraseña; esa tiene su propio endpoint).
+export interface EditarUsuario {
+  nombre?: string;
+  rol?: "ADMIN" | "OPERADOR";
+  sedeId?: string | null;
+}
+
 export const usuariosApi = {
   listar: () => api<Usuario[]>("/usuarios"),
   crear: (datos: NuevoUsuario) =>
     api<Usuario>("/usuarios", { method: "POST", body: JSON.stringify(datos) }),
+  actualizar: (id: string, datos: EditarUsuario) =>
+    api<Usuario>(`/usuarios/${id}`, { method: "PUT", body: JSON.stringify(datos) }),
   // Activar / desactivar un usuario.
   cambiarEstado: (id: string, activo: boolean) =>
     api<Usuario>(`/usuarios/${id}/estado`, {
