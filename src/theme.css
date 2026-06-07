@@ -454,6 +454,35 @@ button {
 }
 
 /* ==========================================================================
+   Logo de marca (ECHO)
+   ========================================================================== */
+.logo-img {
+  display: block;
+  height: auto;
+  object-fit: contain;
+}
+/* En la barra lateral, sobre fondo negro: tarjeta blanca para que resalte */
+.logo-sidebar {
+  background: #fff;
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 28px;
+}
+.logo-sidebar .logo-img {
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+/* Logo grande centrado en el panel de inicio */
+.inicio-logo {
+  text-align: center;
+  margin: 4px 0 18px;
+}
+.inicio-logo .logo-img {
+  margin: 0 auto;
+}
+
+/* ==========================================================================
    Artículos: miniatura en la tabla y vista previa en el modal
    ========================================================================== */
 .miniatura-articulo {

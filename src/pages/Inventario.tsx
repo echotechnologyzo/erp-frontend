@@ -15,6 +15,7 @@ import {
   type Articulo,
 } from "../api/recursos";
 import { SelectorArticulo } from "../components/SelectorArticulo";
+import { useAuth } from "../auth/AuthContext";
 
 const moneda = (v: number | string) =>
   new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(Number(v));
@@ -54,6 +55,8 @@ export function Inventario() {
 // Pestaña EXISTENCIAS: stock y costo promedio por sede, con ajuste manual.
 // --------------------------------------------------------------------------
 function Existencias() {
+  const { usuario } = useAuth();
+  const esAdmin = usuario?.rol === "ADMIN"; // el operador no ve el costo promedio
   const [filas, setFilas] = useState<Existencia[]>([]);
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [sedeId, setSedeId] = useState("");
@@ -115,7 +118,7 @@ function Existencias() {
                 <th>Artículo</th>
                 <th>Sede</th>
                 <th>Cantidad</th>
-                <th>Costo promedio</th>
+                {esAdmin && <th>Costo promedio</th>}
                 <th></th>
               </tr>
             </thead>
@@ -131,7 +134,7 @@ function Existencias() {
                       <span className="muted" style={{ color: "var(--echo-coral)" }}> · bajo</span>
                     )}
                   </td>
-                  <td>{moneda(f.costoPromedio)}</td>
+                  {esAdmin && <td>{moneda(f.costoPromedio)}</td>}
                   <td>
                     <button className="btn-secundario" style={{ padding: "6px 12px" }} onClick={() => setAjuste(f)}>
                       Ajustar
@@ -141,7 +144,7 @@ function Existencias() {
               ))}
               {filas.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="muted" style={{ textAlign: "center", padding: 24 }}>
+                  <td colSpan={esAdmin ? 6 : 5} className="muted" style={{ textAlign: "center", padding: 24 }}>
                     No hay existencias para los filtros seleccionados.
                   </td>
                 </tr>
@@ -178,6 +181,8 @@ function ModalAjuste({
   onCerrar: () => void;
   onHecho: (msg: string) => void;
 }) {
+  const { usuario } = useAuth();
+  const esAdmin = usuario?.rol === "ADMIN"; // el operador no ve/edita el costo
   const [tipo, setTipo] = useState<"entrada" | "salida">("entrada");
   const [cantidad, setCantidad] = useState(1);
   const [costoUnitario, setCostoUnitario] = useState(Number(existencia.costoPromedio));
@@ -196,7 +201,8 @@ function ModalAjuste({
         articuloId: existencia.articulo.id,
         sedeId: existencia.sede.id,
         cantidad: signo * cantidad,
-        costoUnitario: tipo === "entrada" ? costoUnitario : undefined,
+        // El operador no fija costo: las entradas conservan el costo promedio actual.
+        costoUnitario: tipo === "entrada" && esAdmin ? costoUnitario : undefined,
         observacion: observacion || undefined,
       });
       onHecho(`Ajuste aplicado a ${existencia.articulo.nombre} en ${existencia.sede.nombre}.`);
@@ -236,7 +242,7 @@ function ModalAjuste({
             </div>
           </div>
 
-          {tipo === "entrada" && (
+          {tipo === "entrada" && esAdmin && (
             <div className="campo">
               <label>Costo unitario (recalcula el costo promedio)</label>
               <input

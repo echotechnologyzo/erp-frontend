@@ -1,0 +1,11 @@
+Coloca aquí el logo de la marca con el nombre EXACTO:
+
+    logo-echo.png
+
+Se usa automáticamente en:
+  - La pestaña del navegador (favicon).
+  - La barra lateral del software.
+  - El panel de inicio.
+
+Recomendado: PNG cuadrado de fondo transparente o blanco (p. ej. 512x512).
+Si el archivo no existe, el sistema muestra el texto "Echo·ERP" como respaldo.

@@ -29,6 +29,28 @@ type Vista =
   | "comisiones"
   | "reportes";
 
+// Logo de la marca. Usa la imagen /logo-echo.png (colócala en erp-frontend/public).
+// Si la imagen no está disponible, muestra el texto "Echo·ERP" como respaldo.
+function LogoEcho({ alto = 70 }: { alto?: number }) {
+  const [falla, setFalla] = useState(false);
+  if (falla) {
+    return (
+      <span className="logo">
+        Echo<span>·ERP</span>
+      </span>
+    );
+  }
+  return (
+    <img
+      src="/logo-echo.png"
+      alt="ECHO · Tecnología en Casa"
+      className="logo-img"
+      style={{ height: alto }}
+      onError={() => setFalla(true)}
+    />
+  );
+}
+
 export function Dashboard() {
   const { usuario, logout } = useAuth();
   const [vista, setVista] = useState<Vista>("inicio");
@@ -69,7 +91,7 @@ export function Dashboard() {
           <span></span>
         </button>
         <span className="dash-movil-logo">
-          Echo<span>·ERP</span>
+          <LogoEcho alto={34} />
         </span>
       </header>
 
@@ -77,9 +99,9 @@ export function Dashboard() {
       <div className="dash-overlay" onClick={() => setMenuAbierto(false)} />
 
       <aside className="dash-sidebar">
-        <h1 className="logo">
-          Echo<span>·ERP</span>
-        </h1>
+        <div className="logo-sidebar">
+          <LogoEcho />
+        </div>
         <nav className="dash-nav">
           <Link id="inicio">Inicio</Link>
           <Link id="articulos">Artículos</Link>
@@ -151,6 +173,9 @@ function Inicio({
 
   return (
     <>
+      <div className="inicio-logo">
+        <LogoEcho alto={96} />
+      </div>
       <div className="dash-topbar">
         <h2>
           Hola, {nombre}

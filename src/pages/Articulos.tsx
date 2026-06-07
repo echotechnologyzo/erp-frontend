@@ -6,7 +6,6 @@
 // ==========================================================================
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import * as XLSX from "xlsx";
-import { useAuth } from "../auth/AuthContext";
 import { leerLibroExcel } from "../utils/excel";
 import {
   articulosApi,
@@ -65,8 +64,6 @@ const CAMPOS_NUM = [
 ];
 
 export function Articulos() {
-  const { usuario } = useAuth();
-  const esAdmin = usuario?.rol === "ADMIN";
   const [articulos, setArticulos] = useState<Articulo[]>([]);
   const [buscar, setBuscar] = useState("");
   const [cargando, setCargando] = useState(true);
@@ -191,46 +188,6 @@ export function Articulos() {
     }
   }
 
-  // --- Borrar TODO el catálogo (para limpiar y reimportar) ---
-  async function borrarTodos() {
-    if (!window.confirm(
-      "Esto BORRARÁ TODOS los artículos, su inventario y el kardex (stock de apertura). " +
-      "Úsalo solo para reimportar el catálogo actualizado. ¿Continuar?"
-    )) return;
-    // Segunda confirmación por ser una acción irreversible.
-    if (!window.confirm("Confirma de nuevo: se eliminarán TODOS los artículos. Esta acción no se puede deshacer.")) {
-      return;
-    }
-    setError(null);
-    setAviso(null);
-    try {
-      const r = await articulosApi.eliminarTodos();
-      setAviso(`Se eliminaron ${r.eliminados} artículos. Ya puedes importar el catálogo actualizado.`);
-      cargar();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Error al borrar los artículos.";
-      // Si está bloqueado por documentos (remisiones/compras/traslados), ofrecer
-      // el borrado total que también los limpia (útil durante la migración).
-      if (/documentos|remisiones|compras|traslados/i.test(msg)) {
-        if (window.confirm(
-          msg +
-          "\n\n¿Hacer un BORRADO TOTAL que elimine también esas remisiones, compras y traslados? " +
-          "Solo recomendado durante la migración. Esta acción no se puede deshacer."
-        )) {
-          try {
-            const r = await articulosApi.eliminarTodos(true);
-            setAviso(`Borrado total: ${r.eliminados} artículos y todos los documentos de prueba eliminados. Ya puedes reimportar.`);
-            cargar();
-          } catch (e2) {
-            setError(e2 instanceof Error ? e2.message : "Error en el borrado total.");
-          }
-        }
-      } else {
-        setError(msg);
-      }
-    }
-  }
-
   // --- Plantilla de Excel para importar artículos ---
   function descargarPlantilla() {
     const ejemplo = [
@@ -268,15 +225,6 @@ export function Articulos() {
           <button className="btn-secundario" onClick={() => setModalMarcas(true)}>
             Marcas
           </button>
-          {esAdmin && (
-            <button
-              className="btn-secundario"
-              style={{ color: "var(--echo-coral)", borderColor: "var(--echo-coral)" }}
-              onClick={borrarTodos}
-            >
-              Borrar todos
-            </button>
-          )}
           <label
             className="btn-secundario"
             style={{ cursor: importando ? "wait" : "pointer", opacity: importando ? 0.6 : 1 }}
