@@ -181,6 +181,7 @@ export const inventarioApi = {
 export interface Sede {
   id: string;
   nombre: string;
+  consecutivoRemision?: number; // próximo número de remisión de la sede
 }
 export interface Marca {
   id: string;
@@ -189,6 +190,12 @@ export interface Marca {
 export const catalogosApi = {
   sedes: () => api<Sede[]>("/catalogos/sedes"),
   marcas: () => api<Marca[]>("/catalogos/marcas"),
+  // Fija el próximo número de remisión de una sede (consecutivo). Solo ADMIN.
+  actualizarConsecutivo: (id: string, consecutivoRemision: number) =>
+    api<{ id: string; nombre: string; consecutivoRemision: number }>(
+      `/catalogos/sedes/${id}/consecutivo`,
+      { method: "PATCH", body: JSON.stringify({ consecutivoRemision }) }
+    ),
   eliminarMarca: (id: string) =>
     api<{ ok: boolean; articulosDesvinculados: number }>(`/catalogos/marcas/${id}`, {
       method: "DELETE",

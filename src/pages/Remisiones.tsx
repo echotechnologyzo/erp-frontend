@@ -7,6 +7,7 @@
 // ==========================================================================
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import * as XLSX from "xlsx";
+import { useAuth } from "../auth/AuthContext";
 import {
   remisionesApi,
   clientesApi,
@@ -36,6 +37,9 @@ export function Remisiones() {
   const [aviso, setAviso] = useState<string | null>(null);
   const [modal, setModal] = useState(false);
   const [imprimir, setImprimir] = useState<RemisionCompleta | null>(null);
+  const [modalConsec, setModalConsec] = useState(false);
+  const { usuario } = useAuth();
+  const esAdmin = usuario?.rol === "ADMIN";
 
   async function cargar(q = buscar) {
     setCargando(true);
@@ -141,6 +145,11 @@ export function Remisiones() {
             Importar Excel
             <input type="file" accept=".xlsx,.xls" hidden onChange={onArchivoExcel} />
           </label>
+          {esAdmin && (
+            <button className="btn-secundario" onClick={() => setModalConsec(true)}>
+              Consecutivos
+            </button>
+          )}
           <button className="btn-primario" style={{ width: "auto" }} onClick={() => setModal(true)}>
             + Crear remisión
           </button>
@@ -235,6 +244,8 @@ export function Remisiones() {
       )}
 
       {imprimir && <RemisionImprimible remision={imprimir} onCerrar={() => setImprimir(null)} />}
+
+      {modalConsec && <ModalConsecutivos onCerrar={() => setModalConsec(false)} />}
     </div>
   );
 }
@@ -494,6 +505,95 @@ function ModalCrearRemision({ onCerrar, onCreado }: { onCerrar: () => void; onCr
       />
     )}
     </>
+  );
+}
+
+// --------------------------------------------------------------------------
+// Modal (ADMIN) para fijar el PRÓXIMO consecutivo de remisión por sede.
+// Permite continuar la numeración de Effi (p. ej. Medellín = 9644, Bogotá = 3081).
+// --------------------------------------------------------------------------
+function ModalConsecutivos({ onCerrar }: { onCerrar: () => void }) {
+  const [sedes, setSedes] = useState<Sede[]>([]);
+  const [valores, setValores] = useState<Record<string, string>>({});
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState<string | null>(null);
+
+  useEffect(() => {
+    catalogosApi
+      .sedes()
+      .then((s) => {
+        setSedes(s);
+        const v: Record<string, string> = {};
+        s.forEach((se) => { v[se.id] = String(se.consecutivoRemision ?? 1); });
+        setValores(v);
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : "Error al cargar sedes."))
+      .finally(() => setCargando(false));
+  }, []);
+
+  async function guardar(s: Sede) {
+    const n = Number(valores[s.id]);
+    if (!Number.isInteger(n) || n < 1) {
+      setError("El número debe ser un entero mayor o igual a 1.");
+      return;
+    }
+    setError(null);
+    setAviso(null);
+    setGuardando(s.id);
+    try {
+      await catalogosApi.actualizarConsecutivo(s.id, n);
+      setAviso(`La próxima remisión de ${s.nombre} será ${s.nombre.substring(0, 3).toUpperCase()}-${n}.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al guardar el consecutivo.");
+    } finally {
+      setGuardando(null);
+    }
+  }
+
+  return (
+    <div className="modal-fondo" onClick={onCerrar}>
+      <div className="modal" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
+        <h2>Consecutivos de remisión por sede</h2>
+        <p className="muted">
+          Fija el <strong>próximo número</strong> que se asignará en cada sede (para continuar la
+          numeración de Effi). El documento se forma como PREFIJO-número, p. ej. MED-9644.
+        </p>
+        {error && <div className="alerta-error">{error}</div>}
+        {aviso && <div className="alerta-ok">{aviso}</div>}
+        {cargando ? (
+          <p>Cargando…</p>
+        ) : (
+          sedes.map((s) => (
+            <div key={s.id} className="grid-2" style={{ alignItems: "end", marginBottom: 10 }}>
+              <div className="campo">
+                <label>{s.nombre} · próximo {s.nombre.substring(0, 3).toUpperCase()}-</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={valores[s.id] ?? ""}
+                  onChange={(e) => setValores((v) => ({ ...v, [s.id]: e.target.value }))}
+                />
+              </div>
+              <button
+                type="button"
+                className="btn-secundario"
+                style={{ height: 44 }}
+                disabled={guardando === s.id}
+                onClick={() => guardar(s)}
+              >
+                {guardando === s.id ? "Guardando…" : "Guardar"}
+              </button>
+            </div>
+          ))
+        )}
+        <div className="modal-acciones">
+          <button type="button" className="btn-secundario" onClick={onCerrar}>Cerrar</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
