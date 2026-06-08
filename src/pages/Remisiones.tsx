@@ -767,7 +767,7 @@ function CuentaCobroPDF({ data, onCerrar }: { data: CuentaCobro; onCerrar: () =>
               <img src="/logo-echo.png" alt="ECHO" style={{ height: 60, width: "auto" }}
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
               <div>
-                <h1 style={{ margin: 0, fontSize: 18 }}>{data.emisor.nombre}</h1>
+                <h1 style={{ margin: 0, fontSize: 18 }}>{data.emisor.representante}</h1>
                 <div style={{ fontSize: 11, color: "#333" }}>
                   <div><strong>NIT:</strong> {data.emisor.nit} | {data.emisor.regimen}</div>
                   <div>{data.emisor.direccion}</div>
@@ -862,9 +862,15 @@ function CuentaCobroPDF({ data, onCerrar }: { data: CuentaCobro; onCerrar: () =>
           {/* Firmas */}
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 30, fontSize: 11 }}>
             <div style={{ textAlign: "center", width: "40%" }}>
-              <div style={{ borderTop: "1px solid #000", paddingTop: 5, marginBottom: 3 }}>Firma y sello del emisor</div>
-              <div>{data.emisor.nombre}</div>
-              <div>NIT: {data.emisor.nit}</div>
+              <img
+                src="/firma-yesica.png"
+                alt="Firma"
+                style={{ height: 60, width: "auto", marginBottom: 4, display: "block", margin: "0 auto 4px" }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+              />
+              <div style={{ borderTop: "1px solid #000", paddingTop: 5, marginBottom: 3 }}>Firma</div>
+              <div>{data.emisor.representante}</div>
+              <div>C.C.: {data.emisor.nit}</div>
             </div>
             <div style={{ textAlign: "center", width: "40%" }}>
               <div style={{ borderTop: "1px solid #000", paddingTop: 5, marginBottom: 3 }}>Recibí a satisfacción</div>
