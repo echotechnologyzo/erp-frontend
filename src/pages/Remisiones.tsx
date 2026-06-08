@@ -863,7 +863,7 @@ function CuentaCobroPDF({ data, onCerrar }: { data: CuentaCobro; onCerrar: () =>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 30, fontSize: 11 }}>
             <div style={{ textAlign: "center", width: "40%" }}>
               <img
-                src="/firma-yesica.png"
+                src="/firma-yesica.jpg"
                 alt="Firma"
                 style={{ height: 60, width: "auto", marginBottom: 4, display: "block", margin: "0 auto 4px" }}
                 onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
