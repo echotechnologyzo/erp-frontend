@@ -859,23 +859,23 @@ function CuentaCobroPDF({ data, onCerrar }: { data: CuentaCobro; onCerrar: () =>
             </div>
           </div>
 
-          {/* Firmas */}
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 30, fontSize: 11 }}>
+          {/* Firma */}
+          <div style={{ marginTop: 30, fontSize: 11 }}>
             <div style={{ textAlign: "center", width: "40%" }}>
-              <img
-                src="/firma-yesica.jpg"
-                alt="Firma"
-                style={{ height: 60, width: "auto", marginBottom: 4, display: "block", margin: "0 auto 4px" }}
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-              />
-              <div style={{ borderTop: "1px solid #000", paddingTop: 5, marginBottom: 3 }}>Firma</div>
+              {/* Contenedor relativo: la línea pasa por detrás de la firma */}
+              <div style={{ position: "relative" }}>
+                <img
+                  src="/firma-yesica.jpg"
+                  alt="Firma"
+                  style={{ height: 75, width: "auto", display: "block", margin: "0 auto", position: "relative", zIndex: 1 }}
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                />
+                {/* Línea horizontal que cruza la parte baja de la firma */}
+                <div style={{ position: "absolute", bottom: 20, left: 0, right: 0, borderTop: "1px solid #000", zIndex: 0 }} />
+              </div>
+              <div style={{ paddingTop: 5, marginBottom: 3 }}>Firma</div>
               <div>{data.emisor.representante}</div>
               <div>C.C.: {data.emisor.nit}</div>
-            </div>
-            <div style={{ textAlign: "center", width: "40%" }}>
-              <div style={{ borderTop: "1px solid #000", paddingTop: 5, marginBottom: 3 }}>Recibí a satisfacción</div>
-              <div>{data.cliente.nombre}</div>
-              <div>{data.cliente.tipoIdentificacion}: {data.cliente.documento}</div>
             </div>
           </div>
 
