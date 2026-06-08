@@ -495,6 +495,8 @@ export interface FilaImportRemision {
   clienteNombre?: string;
   clienteTelefono?: string | number;
   clienteDireccion?: string;
+  clienteCiudad?: string;
+  clienteDepartamento?: string;
   vendedor?: string;
   remision?: string;
   fecha?: string;

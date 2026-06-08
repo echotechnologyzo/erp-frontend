@@ -147,6 +147,7 @@ export function Remisiones() {
   // Plantilla de Excel con los encabezados esperados (alineada al grupo de
   // WhatsApp → Google Sheets: una fila por artículo).
   function descargarPlantilla() {
+    // ── Hoja 1: datos de ejemplo ──────────────────────────────────────────
     const ejemplo = [
       {
         sede: "Medellín",
@@ -154,7 +155,9 @@ export function Remisiones() {
         clienteTipoIdentificacion: "Cédula de ciudadanía",
         clienteNombre: "Alexis Mejía",
         clienteTelefono: "3113816369",
-        clienteDireccion: "Medellín",
+        clienteDireccion: "Calle 10 # 43A-15",
+        clienteCiudad: "MEDELLÍN",
+        clienteDepartamento: "ANTIOQUIA",
         vendedor: "Jonathan Velásquez",
         remision: "WHATSAPP-001",
         fecha: "2026-05-22",
@@ -167,9 +170,43 @@ export function Remisiones() {
         descuento: 0,
       },
     ];
-    const hoja = XLSX.utils.json_to_sheet(ejemplo);
+    const hojaData = XLSX.utils.json_to_sheet(ejemplo);
+
+    // ── Hoja 2: instrucciones ─────────────────────────────────────────────
+    const instrucciones: (string | number)[][] = [
+      ["COLUMNA", "OBLIGATORIO", "DESCRIPCIÓN", "VALORES PERMITIDOS / EJEMPLO"],
+      ["sede", "Sí", "Sede desde la que se emite la remisión.", "Medellín   |   Bogotá"],
+      ["clienteDocumento", "Sí", "Número de documento del cliente (sin puntos ni comas). Si ya existe en el sistema, se usa ese registro; si no, se crea automáticamente.", "3113816369   |   900123456"],
+      ["clienteTipoIdentificacion", "No", "Tipo de identificación del cliente. Solo se usa si el cliente es NUEVO. Si se omite, se asigna Cédula de ciudadanía.", "Cédula de ciudadanía   |   NIT   |   Cédula de extranjería   |   Pasaporte   |   Otro"],
+      ["clienteNombre", "No*", "Nombre completo o razón social. Requerido solo si el cliente no existe aún en el sistema.", "Alexis Mejía   |   4P BRANDS S.A.S."],
+      ["clienteTelefono", "No", "Celular o teléfono de contacto del cliente.", "3113816369"],
+      ["clienteDireccion", "No", "Dirección completa del cliente.", "Calle 10 # 43A-15   |   Carrera 55 #12Sur-09"],
+      ["clienteCiudad", "No", "Nombre del municipio en mayúsculas tal como aparece en el DANE.", "MEDELLÍN   |   BOGOTÁ, D.C.   |   BELLO   |   ITAGÜÍ"],
+      ["clienteDepartamento", "No", "Nombre del departamento en mayúsculas tal como aparece en el DANE.", "ANTIOQUIA   |   BOGOTÁ, D.C.   |   VALLE DEL CAUCA   |   CUNDINAMARCA"],
+      ["vendedor", "No", "Nombre completo del vendedor tal como está registrado en Empleados.", "Jonathan Velásquez   |   Jamie Lorena Blanco"],
+      ["remision", "No*", "Identificador para agrupar líneas en una misma remisión. Filas con el mismo valor de sede + clienteDocumento + remision se agrupan en UN solo documento. Si se deja vacío, cada fila genera su propia remisión.", "WHATSAPP-001   |   DIRECTO-25   |   MED-junio-01"],
+      ["fecha", "No", "Fecha de la remisión en formato YYYY-MM-DD. Si se omite, se usa la fecha de hoy.", "2026-05-22   |   2026-06-07"],
+      ["medioPago", "No", "Descripción del medio de pago. Se muestra en el PDF.", "Transferencia BANCOLOMBIA Ahorros #69385143982   |   Efectivo   |   Nequi"],
+      ["observacion", "No", "Nota interna o para el cliente. Aparece en el PDF.", "Entrega en punto de recogida   |   (dejar en blanco)"],
+      ["articuloCodigo", "Sí", "Código exacto del artículo registrado en el sistema (campo Código en la pantalla Artículos).", "000006   |   EF-2   |   000035"],
+      ["descripcion", "No", "Descripción personalizada del artículo en esta remisión. Si se omite, se usa el nombre del artículo.", "AMAZON ECHO DOT 5TH GEN NEGRO   |   (dejar en blanco)"],
+      ["cantidad", "Sí", "Unidades vendidas. Debe ser un número entero mayor a 0.", "1   |   2   |   10"],
+      ["precioUnitario", "Sí", "Precio de venta por unidad en pesos colombianos, sin puntos ni comas.", "205000   |   140000   |   500000"],
+      ["descuento", "No", "Descuento total en pesos para esta línea (no porcentaje). Si no hay descuento, poner 0.", "0   |   5000   |   10000"],
+    ];
+    const hojaInstrucciones = XLSX.utils.aoa_to_sheet(instrucciones);
+
+    // Ancho de columnas para la hoja de instrucciones
+    hojaInstrucciones["!cols"] = [
+      { wch: 28 }, // COLUMNA
+      { wch: 12 }, // OBLIGATORIO
+      { wch: 60 }, // DESCRIPCIÓN
+      { wch: 70 }, // VALORES / EJEMPLO
+    ];
+
     const libro = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(libro, hoja, "Remisiones");
+    XLSX.utils.book_append_sheet(libro, hojaData, "Remisiones");
+    XLSX.utils.book_append_sheet(libro, hojaInstrucciones, "Instrucciones");
     XLSX.writeFile(libro, "plantilla_remisiones_venta.xlsx");
   }
 
@@ -793,7 +830,7 @@ function CuentaCobroPDF({ data, onCerrar }: { data: CuentaCobro; onCerrar: () =>
               <div><strong>Cliente:</strong> {data.cliente.nombre}</div>
               <div><strong>{data.cliente.tipoIdentificacion}:</strong> {data.cliente.documento}</div>
               <div><strong>Teléfono:</strong> {data.cliente.telefono || "—"}</div>
-              <div><strong>Dirección:</strong> {data.cliente.direccion ?? "."} / {data.cliente.ciudad ?? ""} / {data.cliente.departamento ?? ""}</div>
+              <div><strong>Dirección:</strong> {[data.cliente.direccion, data.cliente.ciudad, data.cliente.departamento].filter(Boolean).join(" / ") || "—"}</div>
             </div>
           </div>
 
@@ -1004,7 +1041,7 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
               <tr><td colSpan={2}><strong>Teléfono:</strong> {r.cliente.telefono || "—"}</td></tr>
               <tr>
                 <td colSpan={2}>
-                  <strong>Dirección:</strong> {r.cliente.direccion ?? "."} / {r.cliente.ciudad ?? ""} / {r.cliente.departamento ?? ""} / {r.cliente.pais ?? "Colombia"}
+                  <strong>Dirección:</strong> {[r.cliente.direccion, r.cliente.ciudad, r.cliente.departamento, r.cliente.pais ?? "Colombia"].filter(Boolean).join(" / ")}
                 </td>
               </tr>
               <tr><td colSpan={2}><strong>Elaboró:</strong> {r.elaboro} ({r.sede.nombre})</td></tr>
