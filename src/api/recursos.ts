@@ -490,9 +490,10 @@ export interface NuevaRemision {
 // Fila plana para importar remisiones desde Excel (Google Sheets / WhatsApp).
 export interface FilaImportRemision {
   sede: string;
-  clienteDocumento: string;
+  clienteDocumento: string | number; // número de documento (Excel lo manda como number)
+  clienteTipoIdentificacion?: string;
   clienteNombre?: string;
-  clienteTelefono?: string;
+  clienteTelefono?: string | number;
   clienteDireccion?: string;
   vendedor?: string;
   remision?: string;

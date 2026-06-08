@@ -11,6 +11,12 @@ import * as XLSX from "xlsx";
 import { leerLibroExcel } from "../utils/excel";
 import { useAuth } from "../auth/AuthContext";
 import {
+  municipiosPorDepto,
+  nombresDepartamentos,
+  DEFAULT_DEPTO_MEDELLIN,
+  DEFAULT_CIUDAD_MEDELLIN,
+} from "../data/divipola";
+import {
   clientesApi,
   empleadosApi,
   type Cliente,
@@ -449,8 +455,8 @@ export function ModalCliente({
     celular: cliente?.celular ?? "",
     whatsapp: cliente?.whatsapp ?? "",
     pais: cliente?.pais ?? "Colombia",
-    departamento: cliente?.departamento ?? "",
-    ciudad: cliente?.ciudad ?? "",
+    departamento: cliente?.departamento ?? DEFAULT_DEPTO_MEDELLIN,
+    ciudad: cliente?.ciudad ?? DEFAULT_CIUDAD_MEDELLIN,
     direccion: cliente?.direccion ?? "",
     tipoPersona: cliente?.tipoPersona ?? "Física (natural)",
     tipoCliente: cliente?.tipoCliente ?? "Común",
@@ -540,11 +546,35 @@ export function ModalCliente({
           <div className="grid-2">
             <div className="campo">
               <label>Departamento</label>
-              <input value={form.departamento ?? ""} onChange={(e) => set("departamento", e.target.value)} />
+              <select
+                value={form.departamento ?? ""}
+                onChange={(e) => {
+                  const depto = e.target.value;
+                  // Al cambiar departamento, reiniciar ciudad al primer municipio
+                  const muns = municipiosPorDepto[depto] ?? [];
+                  set("departamento", depto);
+                  set("ciudad", muns[0]?.nombre ?? "");
+                }}
+              >
+                <option value="">— Seleccionar —</option>
+                {nombresDepartamentos.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
             </div>
             <div className="campo">
-              <label>Ciudad</label>
-              <input value={form.ciudad ?? ""} onChange={(e) => set("ciudad", e.target.value)} />
+              <label>Ciudad / Municipio</label>
+              <select
+                value={form.ciudad ?? ""}
+                onChange={(e) => set("ciudad", e.target.value)}
+              >
+                <option value="">— Seleccionar —</option>
+                {(municipiosPorDepto[form.departamento ?? ""] ?? []).map((m) => (
+                  <option key={m.codigo} value={m.nombre}>
+                    {m.nombre} <span style={{ color: "#999" }}>({m.codigo})</span>
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

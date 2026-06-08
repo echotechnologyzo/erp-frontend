@@ -147,10 +147,11 @@ export function Remisiones() {
   // Plantilla de Excel con los encabezados esperados (alineada al grupo de
   // WhatsApp → Google Sheets: una fila por artículo).
   function descargarPlantilla() {
-    const ejemplo: FilaImportRemision[] = [
+    const ejemplo = [
       {
         sede: "Medellín",
         clienteDocumento: "3113816369",
+        clienteTipoIdentificacion: "Cédula de ciudadanía",
         clienteNombre: "Alexis Mejía",
         clienteTelefono: "3113816369",
         clienteDireccion: "Medellín",
