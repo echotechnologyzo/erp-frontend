@@ -205,7 +205,7 @@ export function Remisiones() {
         <button className="btn-secundario" onClick={() => buscarReiniciando(buscar)}>Buscar</button>
       </div>
 
-      {error && <div className="alerta-error">{error}</div>}
+      {error && <div className="alerta-error" style={{ whiteSpace: "pre-wrap" }}>{error}</div>}
       {aviso && <div className="alerta-ok">{aviso}</div>}
 
       {cargando ? (

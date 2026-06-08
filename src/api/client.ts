@@ -34,7 +34,12 @@ export async function api<T>(
   const datos = await resp.json().catch(() => ({}));
 
   if (!resp.ok) {
-    throw new Error(datos.mensaje ?? "Error al conectar con el servidor.");
+    // Si el backend mandó un array de errores detallados (validación Zod),
+    // los incluimos en el mensaje para que lleguen a la pantalla.
+    const errores: string[] = Array.isArray(datos.errores) ? datos.errores : [];
+    const detalle =
+      errores.length > 0 ? "\n" + errores.slice(0, 8).join("\n") : "";
+    throw new Error((datos.mensaje ?? "Error al conectar con el servidor.") + detalle);
   }
 
   return datos as T;
