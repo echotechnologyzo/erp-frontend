@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import * as XLSX from "xlsx";
 import { useAuth } from "../auth/AuthContext";
+import html2pdf from "html2pdf.js";
 import {
   remisionesApi,
   clientesApi,
@@ -16,6 +17,7 @@ import {
   empleadosApi,
   type Remision,
   type RemisionCompleta,
+  type CuentaCobro,
   type Sede,
   type Articulo,
   type Cliente,
@@ -32,6 +34,9 @@ const pesos = (v: number) => "$" + Math.round(Number(v)).toLocaleString("en-US")
 export function Remisiones() {
   const [lista, setLista] = useState<Remision[]>([]);
   const [buscar, setBuscar] = useState("");
+  const [pagina, setPagina] = useState(1);
+  const [total, setTotal] = useState(0);
+  const TAM = 50; // remisiones por página
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -39,14 +44,18 @@ export function Remisiones() {
   const [duplicarBase, setDuplicarBase] = useState<RemisionCompleta | null>(null);
   const [imprimir, setImprimir] = useState<RemisionCompleta | null>(null);
   const [modalConsec, setModalConsec] = useState(false);
+  const [cuentaCobro, setCuentaCobro] = useState<CuentaCobro | null>(null);
   const { usuario } = useAuth();
   const esAdmin = usuario?.rol === "ADMIN";
 
-  async function cargar(q = buscar) {
+  async function cargar(q = buscar, p = pagina) {
     setCargando(true);
     setError(null);
     try {
-      setLista(await remisionesApi.listar({ buscar: q }));
+      const resp = await remisionesApi.listar({ buscar: q, pagina: p, tam: TAM });
+      setLista(resp.datos);
+      setTotal(resp.total);
+      setPagina(resp.pagina);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al cargar remisiones.");
     } finally {
@@ -54,10 +63,17 @@ export function Remisiones() {
     }
   }
 
+  // Al buscar volvemos siempre a la primera página.
+  function buscarReiniciando(q = buscar) {
+    cargar(q, 1);
+  }
+
   useEffect(() => {
-    cargar("");
+    cargar("", 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const totalPaginas = Math.max(1, Math.ceil(total / TAM));
 
   async function verPdf(id: string) {
     setError(null);
@@ -76,6 +92,17 @@ export function Remisiones() {
       setDuplicarBase(completa);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al duplicar la remisión.");
+    }
+  }
+
+  // Generar cuenta de cobro (bajo demanda, no persiste).
+  async function generarCuentaCobro(id: string) {
+    setError(null);
+    try {
+      const data = await remisionesApi.cuentaCobro(id);
+      setCuentaCobro(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al generar cuenta de cobro.");
     }
   }
 
@@ -173,9 +200,9 @@ export function Remisiones() {
           placeholder="Buscar por cliente o documento…"
           value={buscar}
           onChange={(e) => setBuscar(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && cargar(buscar)}
+          onKeyDown={(e) => e.key === "Enter" && buscarReiniciando(buscar)}
         />
-        <button className="btn-secundario" onClick={() => cargar(buscar)}>Buscar</button>
+        <button className="btn-secundario" onClick={() => buscarReiniciando(buscar)}>Buscar</button>
       </div>
 
       {error && <div className="alerta-error">{error}</div>}
@@ -229,13 +256,22 @@ export function Remisiones() {
                       {r.estado === "ANULADA" ? (
                         <span className="badge-sede">Anulada</span>
                       ) : (
-                        <button
-                          className="btn-secundario"
-                          style={{ padding: "6px 12px", color: "var(--echo-coral)", borderColor: "var(--echo-coral)" }}
-                          onClick={() => anular(r)}
-                        >
-                          Anular
-                        </button>
+                        <>
+                          <button
+                            className="btn-secundario"
+                            style={{ padding: "6px 12px" }}
+                            onClick={() => generarCuentaCobro(r.id)}
+                          >
+                            Cuenta de cobro
+                          </button>
+                          <button
+                            className="btn-secundario"
+                            style={{ padding: "6px 12px", color: "var(--echo-coral)", borderColor: "var(--echo-coral)" }}
+                            onClick={() => anular(r)}
+                          >
+                            Anular
+                          </button>
+                        </>
                       )}
                     </div>
                   </td>
@@ -250,6 +286,34 @@ export function Remisiones() {
               )}
             </tbody>
           </table>
+
+          {total > 0 && (
+            <div
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginTop: 12 }}
+            >
+              <span className="muted">
+                {total} remisiones · página {pagina} de {totalPaginas}
+              </span>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button
+                  className="btn-secundario"
+                  style={{ padding: "6px 12px" }}
+                  disabled={pagina <= 1}
+                  onClick={() => cargar(buscar, pagina - 1)}
+                >
+                  ← Anterior
+                </button>
+                <button
+                  className="btn-secundario"
+                  style={{ padding: "6px 12px" }}
+                  disabled={pagina >= totalPaginas}
+                  onClick={() => cargar(buscar, pagina + 1)}
+                >
+                  Siguiente →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -267,6 +331,8 @@ export function Remisiones() {
       )}
 
       {imprimir && <RemisionImprimible remision={imprimir} onCerrar={() => setImprimir(null)} />}
+
+      {cuentaCobro && <CuentaCobroPDF data={cuentaCobro} onCerrar={() => setCuentaCobro(null)} />}
 
       {modalConsec && <ModalConsecutivos onCerrar={() => setModalConsec(false)} />}
     </div>
@@ -645,6 +711,173 @@ function ModalConsecutivos({ onCerrar }: { onCerrar: () => void }) {
         )}
         <div className="modal-acciones">
           <button type="button" className="btn-secundario" onClick={onCerrar}>Cerrar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --------------------------------------------------------------------------
+// Componente para generar y descargar la CUENTA DE COBRO en PDF.
+// --------------------------------------------------------------------------
+function CuentaCobroPDF({ data, onCerrar }: { data: CuentaCobro; onCerrar: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [generando, setGenerando] = useState(false);
+
+  const pesos = (v: number) => "$" + Math.round(Number(v)).toLocaleString("en-US");
+  const fechaTxt = (s: string) => new Date(s).toLocaleDateString("es-CO");
+
+  async function descargarPDF() {
+    if (!ref.current) return;
+    setGenerando(true);
+    try {
+      const opt = {
+        margin: [10, 10, 10, 10] as [number, number, number, number],
+        filename: `Cuenta_Cobro_${data.numero}.pdf`,
+        image: { type: "jpeg" as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "letter", orientation: "portrait" as const },
+      };
+      await html2pdf().set(opt).from(ref.current).save();
+    } catch (err) {
+      console.error("Error al generar PDF:", err);
+    } finally {
+      setGenerando(false);
+    }
+  }
+
+  return (
+    <div className="modal-fondo">
+      <div className="modal" style={{ maxWidth: 900, maxHeight: "92vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-acciones no-print" style={{ justifyContent: "space-between", marginTop: 0, marginBottom: 12 }}>
+          <h2 style={{ margin: 0 }}>Cuenta de cobro {data.numero}</h2>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button className="btn-secundario" onClick={onCerrar}>Cerrar</button>
+            <button className="btn-primario" style={{ width: "auto" }} onClick={descargarPDF} disabled={generando}>
+              {generando ? "Generando PDF…" : "Descargar PDF"}
+            </button>
+          </div>
+        </div>
+
+        {/* Documento imprimible */}
+        <div ref={ref} style={{ padding: 20, fontFamily: "Arial, sans-serif", fontSize: 12, color: "#000" }}>
+          {/* Encabezado */}
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 20, borderBottom: "2px solid #000", paddingBottom: 10 }}>
+            <div style={{ display: "flex", gap: 15, alignItems: "center" }}>
+              <img src="/logo-echo.png" alt="ECHO" style={{ height: 60, width: "auto" }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+              <div>
+                <h1 style={{ margin: 0, fontSize: 18 }}>{data.emisor.nombre}</h1>
+                <div style={{ fontSize: 11, color: "#333" }}>
+                  <div><strong>NIT:</strong> {data.emisor.nit} | {data.emisor.regimen}</div>
+                  <div>{data.emisor.direccion}</div>
+                  <div><strong>Tel:</strong> {data.emisor.telefono} | <strong>Email:</strong> {data.emisor.email}</div>
+                </div>
+              </div>
+            </div>
+            <div style={{ textAlign: "right", borderLeft: "2px solid #000", paddingLeft: 15 }}>
+              <div style={{ fontSize: 16, fontWeight: "bold", color: "#1a5276" }}>CUENTA DE COBRO</div>
+              <div style={{ fontSize: 14, fontWeight: "bold" }}>No. {data.numero}</div>
+              <div style={{ fontSize: 11, marginTop: 5 }}>
+                <div><strong>Fecha:</strong> {fechaTxt(data.fecha)}</div>
+                <div><strong>Vencimiento:</strong> {fechaTxt(data.vencimiento)}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Datos del cliente */}
+          <div style={{ marginBottom: 15, padding: 10, border: "1px solid #ccc", borderRadius: 4 }}>
+            <div style={{ fontWeight: "bold", marginBottom: 5, fontSize: 13 }}>DATOS DEL CLIENTE</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+              <div><strong>Cliente:</strong> {data.cliente.nombre}</div>
+              <div><strong>{data.cliente.tipoIdentificacion}:</strong> {data.cliente.documento}</div>
+              <div><strong>Teléfono:</strong> {data.cliente.telefono || "—"}</div>
+              <div><strong>Dirección:</strong> {data.cliente.direccion ?? "."} / {data.cliente.ciudad ?? ""} / {data.cliente.departamento ?? ""}</div>
+            </div>
+          </div>
+
+          {/* Referencia remisión */}
+          <div style={{ marginBottom: 10, fontSize: 11, fontStyle: "italic", color: "#555" }}>
+            Documento de referencia: Remisión <strong>{data.remisionDocumento}</strong> del {fechaTxt(data.remisionFecha)}
+          </div>
+
+          {/* Tabla de conceptos */}
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 15 }}>
+            <thead>
+              <tr style={{ backgroundColor: "#1a5276", color: "#fff" }}>
+                <th style={{ padding: 8, textAlign: "center", border: "1px solid #1a5276", width: 40 }}>#</th>
+                <th style={{ padding: 8, textAlign: "left", border: "1px solid #1a5276" }}>CÓDIGO</th>
+                <th style={{ padding: 8, textAlign: "left", border: "1px solid #1a5276" }}>DESCRIPCIÓN</th>
+                <th style={{ padding: 8, textAlign: "center", border: "1px solid #1a5276", width: 60 }}>CANT.</th>
+                <th style={{ padding: 8, textAlign: "right", border: "1px solid #1a5276", width: 100 }}>V. UNITARIO</th>
+                <th style={{ padding: 8, textAlign: "right", border: "1px solid #1a5276", width: 100 }}>SUBTOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.items.map((it) => (
+                <tr key={it.item}>
+                  <td style={{ padding: 6, textAlign: "center", border: "1px solid #ccc" }}>{it.item}</td>
+                  <td style={{ padding: 6, border: "1px solid #ccc" }}>{it.codigo}</td>
+                  <td style={{ padding: 6, border: "1px solid #ccc" }}>{it.descripcion}</td>
+                  <td style={{ padding: 6, textAlign: "center", border: "1px solid #ccc" }}>{it.cantidad}</td>
+                  <td style={{ padding: 6, textAlign: "right", border: "1px solid #ccc" }}>{pesos(it.precioUnitario)}</td>
+                  <td style={{ padding: 6, textAlign: "right", border: "1px solid #ccc" }}>{pesos(it.subtotal)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Totales */}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 15 }}>
+            <table style={{ width: 300, borderCollapse: "collapse" }}>
+              <tbody>
+                <tr>
+                  <td style={{ padding: 6, textAlign: "right", fontWeight: "bold" }}>SUBTOTAL:</td>
+                  <td style={{ padding: 6, textAlign: "right", borderBottom: "1px solid #ccc" }}>{pesos(data.subtotal)}</td>
+                </tr>
+                {data.descuento > 0 && (
+                  <tr>
+                    <td style={{ padding: 6, textAlign: "right", fontWeight: "bold" }}>DESCUENTO:</td>
+                    <td style={{ padding: 6, textAlign: "right", borderBottom: "1px solid #ccc" }}>-{pesos(data.descuento)}</td>
+                  </tr>
+                )}
+                <tr>
+                  <td style={{ padding: 8, textAlign: "right", fontWeight: "bold", fontSize: 14, backgroundColor: "#eaf2f8" }}>TOTAL NETO:</td>
+                  <td style={{ padding: 8, textAlign: "right", fontWeight: "bold", fontSize: 14, backgroundColor: "#eaf2f8" }}>{pesos(data.total)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Forma de pago */}
+          <div style={{ marginBottom: 15, padding: 10, border: "1px solid #ccc", borderRadius: 4, fontSize: 11 }}>
+            <div><strong>Forma de pago:</strong> {data.formaPago === "CONTADO" ? "Contado" : data.formaPago}</div>
+            {data.medioPago && <div><strong>Medio de pago:</strong> {data.medioPago}</div>}
+            {data.observacion && <div><strong>Observación:</strong> {data.observacion}</div>}
+            <div style={{ marginTop: 4, fontStyle: "italic", color: "#666" }}>
+              - No registran impuestos ni retenciones -
+            </div>
+          </div>
+
+          {/* Firmas */}
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 30, fontSize: 11 }}>
+            <div style={{ textAlign: "center", width: "40%" }}>
+              <div style={{ borderTop: "1px solid #000", paddingTop: 5, marginBottom: 3 }}>Firma y sello del emisor</div>
+              <div>{data.emisor.nombre}</div>
+              <div>NIT: {data.emisor.nit}</div>
+            </div>
+            <div style={{ textAlign: "center", width: "40%" }}>
+              <div style={{ borderTop: "1px solid #000", paddingTop: 5, marginBottom: 3 }}>Recibí a satisfacción</div>
+              <div>{data.cliente.nombre}</div>
+              <div>{data.cliente.tipoIdentificacion}: {data.cliente.documento}</div>
+            </div>
+          </div>
+
+          {/* Pie de página */}
+          <div style={{ marginTop: 20, textAlign: "center", fontSize: 10, color: "#888", borderTop: "1px solid #ccc", paddingTop: 8 }}>
+            <div>Generado desde el sistema de gestión - {data.emisor.nombre}</div>
+            <div>{data.emisor.web} | {data.emisor.email} | Tel: {data.emisor.telefono}</div>
+          </div>
         </div>
       </div>
     </div>

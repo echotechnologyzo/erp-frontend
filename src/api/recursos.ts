@@ -520,12 +520,76 @@ export interface ReporteComisiones {
   totales: { ventas: number; comision: number; remisiones: number };
 }
 
+// --------------------------------------------------------------------------
+// CUENTA DE COBRO (generada bajo demanda desde una remisión)
+// --------------------------------------------------------------------------
+export interface CuentaCobro {
+  tipo: string;
+  numero: string;
+  numeroConsecutivo: number;
+  fecha: string;
+  vencimiento: string;
+  estado: string;
+  emisor: {
+    nombre: string;
+    representante: string;
+    nit: string;
+    regimen: string;
+    sede: string;
+    direccion: string;
+    telefono: string;
+    email: string;
+    web: string;
+  };
+  cliente: {
+    nombre: string;
+    documento: string;
+    tipoIdentificacion: string;
+    telefono: string;
+    direccion: string | null;
+    ciudad: string | null;
+    departamento: string | null;
+    pais: string | null;
+  };
+  remisionDocumento: string;
+  remisionFecha: string;
+  items: {
+    item: number;
+    codigo: string;
+    descripcion: string;
+    cantidad: number;
+    precioUnitario: number;
+    descuento: number;
+    subtotal: number;
+  }[];
+  subtotal: number;
+  descuento: number;
+  total: number;
+  formaPago: string;
+  medioPago: string | null;
+  observacion: string | null;
+  elaboro: string;
+  vendedor: string | null;
+}
+
 export const remisionesApi = {
-  listar: (filtros: { sedeId?: string; vendedor?: string; buscar?: string; desde?: string; hasta?: string } = {}) => {
+  listar: (
+    filtros: {
+      sedeId?: string;
+      vendedor?: string;
+      buscar?: string;
+      desde?: string;
+      hasta?: string;
+      pagina?: number;
+      tam?: number;
+    } = {}
+  ) => {
     const qs = new URLSearchParams();
     Object.entries(filtros).forEach(([k, v]) => v && qs.set(k, String(v)));
     const s = qs.toString();
-    return api<Remision[]>(`/remisiones${s ? `?${s}` : ""}`);
+    return api<{ total: number; pagina: number; tam: number; datos: Remision[] }>(
+      `/remisiones${s ? `?${s}` : ""}`
+    );
   },
   obtener: (id: string) => api<RemisionCompleta>(`/remisiones/${id}`),
   crear: (datos: NuevaRemision) =>
@@ -543,6 +607,8 @@ export const remisionesApi = {
     const s = qs.toString();
     return api<ReporteComisiones>(`/remisiones/comisiones${s ? `?${s}` : ""}`);
   },
+  cuentaCobro: (id: string) =>
+    api<CuentaCobro>(`/remisiones/${id}/cuenta-cobro`),
 };
 
 // --- Usuarios (solo ADMIN) ---
