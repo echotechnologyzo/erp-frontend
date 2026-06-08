@@ -862,18 +862,11 @@ function CuentaCobroPDF({ data, onCerrar }: { data: CuentaCobro; onCerrar: () =>
           {/* Firma */}
           <div style={{ marginTop: 30, fontSize: 11 }}>
             <div style={{ textAlign: "center", width: "40%" }}>
-              {/* Contenedor de altura fija: imagen y línea en posición absoluta.
-                  La imagen PNG con fondo transparente deja ver la línea a través. */}
+              {/* Contenedor de altura fija: línea ENCIMA de la firma.
+                  zIndex mayor en la línea garantiza que se vea cruzando
+                  la imagen independientemente de la transparencia del PNG. */}
               <div style={{ position: "relative", height: 80 }}>
-                {/* Línea que atraviesa la firma (marca de agua) */}
-                <div style={{
-                  position: "absolute",
-                  top: 56,
-                  left: 0,
-                  right: 0,
-                  borderTop: "1px solid #000",
-                }} />
-                {/* Firma encima de la línea */}
+                {/* Firma detrás */}
                 <img
                   src="/firma-yesica.jpg"
                   alt="Firma"
@@ -884,9 +877,19 @@ function CuentaCobroPDF({ data, onCerrar }: { data: CuentaCobro; onCerrar: () =>
                     transform: "translateX(-50%)",
                     height: 75,
                     width: "auto",
+                    zIndex: 1,
                   }}
                   onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                 />
+                {/* Línea encima de la firma — cruza a 56px del tope */}
+                <div style={{
+                  position: "absolute",
+                  top: 56,
+                  left: 0,
+                  right: 0,
+                  borderTop: "1px solid #000",
+                  zIndex: 2,
+                }} />
               </div>
               <div style={{ paddingTop: 5, marginBottom: 3 }}>Firma</div>
               <div>{data.emisor.representante}</div>
