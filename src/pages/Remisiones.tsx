@@ -978,7 +978,7 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
             <div className="rp-emisor">
               <h1>{EMISOR.nombre}</h1>
               <div className="rp-rep">{EMISOR.representante}</div>
-              <div><strong>NIT:</strong> {EMISOR.nit} | {EMISOR.regimen}</div>
+              <div><strong>C.C.:</strong> {EMISOR.nit} | {EMISOR.regimen}</div>
               <div>{dirEmisor}</div>
               <div><strong>Teléfonos:</strong> {r.sede.telefono ?? EMISOR.telefonos}</div>
               <div><strong>Email:</strong> {EMISOR.email}</div>
@@ -1074,23 +1074,12 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
                   "."}
           </div>
 
-          {/* Firmas */}
-          <table className="rp-firmas">
-            <tbody>
-              <tr>
-                <td>
-                  <div className="rp-firma-linea">_____________________</div>
-                  Firma y sello emisor
-                </td>
-                <td><strong>Observación:</strong> {r.observacion ?? "-No registra-"}</td>
-                <td>
-                  <div className="rp-recibi"><strong>Recibí a satisfacción:</strong></div>
-                  <div className="rp-firma-linea">___________________________________</div>
-                  Nombre, identificación, sello y fecha
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          {/* Observación (firma manual — se elimina el bloque de firmas impreso) */}
+          {r.observacion && r.observacion !== "-No registra-" && (
+            <div className="rp-garantia">
+              <strong>Observación:</strong> {r.observacion}
+            </div>
+          )}
         </div>
       </div>
     </div>
