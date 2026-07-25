@@ -253,36 +253,51 @@ export function Clientes() {
     setError(null);
     try {
       const todos = await clientesApi.exportar();
+
+      // Columnas exactas que Google Contacts reconoce al importar.
       const cab = [
-        "Name",
-        "Given Name",
+        "First Name",
+        "E-mail 1 - Label",
         "E-mail 1 - Value",
-        "Phone 1 - Type",
+        "Phone 1 - Label",
         "Phone 1 - Value",
-        "Phone 2 - Type",
+        "Phone 2 - Label",
         "Phone 2 - Value",
-        "Address 1 - Formatted",
         "Notes",
       ];
+
       const esc = (v: string) => `"${(v ?? "").replace(/"/g, '""')}"`;
+
+      // Agrega +57 si el número tiene 10 dígitos y no trae código de país.
+      const col57 = (n?: string | null) => {
+        if (!n) return "";
+        const limpio = n.replace(/\D/g, "");
+        return limpio.length === 10 ? `+57${limpio}` : n;
+      };
+
       const lineas = [cab.map(esc).join(",")];
       for (const c of todos) {
+        const direccion = [c.direccion, c.ciudad, c.departamento, c.pais]
+          .filter(Boolean)
+          .join(", ");
+        const notas = [direccion, c.observacion].filter(Boolean).join(" | ");
+
         lineas.push(
           [
             c.nombre,
-            c.nombre,
+            "Home",
             c.email ?? "",
             "Mobile",
-            c.celular ?? c.whatsapp ?? "",
+            col57(c.celular ?? c.whatsapp ?? ""),
             "Home",
-            c.telefono1 ?? c.telefono2 ?? "",
-            [c.direccion, c.ciudad, c.departamento, c.pais].filter(Boolean).join(", "),
-            c.observacion ?? "",
+            col57(c.telefono1 ?? c.telefono2 ?? ""),
+            notas,
           ]
             .map((x) => esc(String(x ?? "")))
             .join(",")
         );
       }
+
       // BOM para que Google/Excel respeten los acentos.
       const blob = new Blob(["﻿" + lineas.join("\r\n")], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
