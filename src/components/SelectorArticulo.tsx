@@ -59,18 +59,21 @@ export function SelectorArticulo({
                 type="button"
                 key={a.id}
                 className="opcion"
-                style={sinStock ? { opacity: 0.5 } : undefined}
                 onMouseDown={() => { onElegir(a.id); setAbierto(false); }}
               >
                 <strong>{a.codigo}</strong> · {a.nombre}
                 {stock !== null && (
                   <span style={{
                     marginLeft: 8,
-                    fontSize: "0.82em",
-                    color: sinStock ? "#e53e3e" : "#38a169",
+                    fontSize: "0.8em",
                     fontWeight: 600,
+                    color: sinStock ? "#c53030" : "#276749",
+                    background: sinStock ? "#fff5f5" : "#f0fff4",
+                    border: `1px solid ${sinStock ? "#feb2b2" : "#9ae6b4"}`,
+                    borderRadius: 4,
+                    padding: "1px 6px",
                   }}>
-                    {sinStock ? "Sin stock" : `Stock: ${stock}`}
+                    {sinStock ? "Sin stock" : `${stock} uds`}
                   </span>
                 )}
               </button>
