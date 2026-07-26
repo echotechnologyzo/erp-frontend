@@ -620,7 +620,12 @@ function ModalCrearRemision({
           <div className="grid-2">
             <div className="campo">
               <label>Medio de pago</label>
-              <input value={medioPago} onChange={(e) => setMedioPago(e.target.value)} placeholder="Transferencia bancaria - BANCOLOMBIA Ahorros #…" />
+              <select value={medioPago} onChange={(e) => setMedioPago(e.target.value)}>
+                <option value="">— Seleccionar —</option>
+                <option value="Efectivo">Efectivo</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Crédito">Crédito</option>
+              </select>
             </div>
             <div className="campo">
               <label>Observación</label>
