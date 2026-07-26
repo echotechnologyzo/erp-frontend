@@ -1069,7 +1069,7 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
               </tr>
             </thead>
             <tbody>
-              {r.detalles.map((d) => (
+              {[...r.detalles].sort((a, b) => Number(a.esTercero) - Number(b.esTercero)).map((d) => (
                 <tr key={d.item}>
                   <td>{d.item}</td>
                   <td>{d.ref}</td>
