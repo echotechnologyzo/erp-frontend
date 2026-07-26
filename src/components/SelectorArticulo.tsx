@@ -66,14 +66,9 @@ export function SelectorArticulo({
                   <span style={{
                     marginLeft: 8,
                     fontSize: "0.8em",
-                    fontWeight: 600,
-                    color: sinStock ? "#c53030" : "#276749",
-                    background: sinStock ? "#fff5f5" : "#f0fff4",
-                    border: `1px solid ${sinStock ? "#feb2b2" : "#9ae6b4"}`,
-                    borderRadius: 4,
-                    padding: "1px 6px",
+                    color: sinStock ? "#c53030" : "inherit",
                   }}>
-                    {sinStock ? "Sin stock" : `${stock} uds`}
+                    {sinStock ? "· Sin stock" : `· ${stock} uds`}
                   </span>
                 )}
               </button>
