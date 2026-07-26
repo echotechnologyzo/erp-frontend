@@ -623,7 +623,8 @@ function ModalCrearRemision({
               <select value={medioPago} onChange={(e) => setMedioPago(e.target.value)}>
                 <option value="">— Seleccionar —</option>
                 <option value="Efectivo">Efectivo</option>
-                <option value="Transferencia">Transferencia</option>
+                <option value="Transferencia bancaria">Transferencia bancaria</option>
+                <option value="Tarjeta de crédito">Tarjeta de crédito</option>
                 <option value="Crédito">Crédito</option>
               </select>
             </div>
