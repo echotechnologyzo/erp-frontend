@@ -585,6 +585,7 @@ function ModalCrearRemision({
                   articulos={articulos}
                   valor={it.articuloId}
                   onElegir={(id) => elegirArticulo(idx, id)}
+                  sedeId={sedeId}
                 />
                 <input
                   type="number" min="1" step="1" title="Cantidad" style={{ width: 70 }}
