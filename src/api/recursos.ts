@@ -672,6 +672,19 @@ export interface ResumenVentas {
   margen: number; // %
   porSede: { sede: string; ventas: number; utilidad: number; remisiones: number }[];
 }
+export interface ValorMercanciaArticulo {
+  codigo: string;
+  nombre: string;
+  marca: string;
+  sedes: { nombre: string; cantidad: number; costoPromedio: number; valor: number }[];
+  totalUnidades: number;
+  totalValor: number;
+}
+export interface ValorMercancia {
+  articulos: ValorMercanciaArticulo[];
+  totalEmpresa: number;
+}
+
 export interface ProductoTop {
   codigo: string;
   nombre: string;
@@ -693,4 +706,5 @@ export const reportesApi = {
     const s = qs.toString();
     return api<ProductoTop[]>(`/reportes/top-productos${s ? `?${s}` : ""}`);
   },
+  valorMercancia: () => api<ValorMercancia>("/reportes/valor-mercancia"),
 };
