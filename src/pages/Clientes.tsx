@@ -594,11 +594,17 @@ export function ModalCliente({
           <div className="grid-3">
             <div className="campo">
               <label>Tipo de cliente</label>
-              <input value={form.tipoCliente ?? ""} onChange={(e) => set("tipoCliente", e.target.value)} />
+              <select value={form.tipoCliente ?? "Común"} onChange={(e) => set("tipoCliente", e.target.value)}>
+                <option value="Común">Común</option>
+                <option value="Mayorista">Mayorista</option>
+              </select>
             </div>
             <div className="campo">
               <label>Tarifa de precios</label>
-              <input value={form.tarifaPrecios ?? ""} onChange={(e) => set("tarifaPrecios", e.target.value)} />
+              <select value={form.tarifaPrecios ?? "Tarifa normal"} onChange={(e) => set("tarifaPrecios", e.target.value)}>
+                <option value="Tarifa normal">Tarifa normal</option>
+                <option value="Mayorista">Mayorista</option>
+              </select>
             </div>
             <div className="campo">
               <label>Vendedor</label>
