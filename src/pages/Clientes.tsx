@@ -513,7 +513,7 @@ export function ModalCliente({
 
   return (
     <div className="modal-fondo">
-      <div className="modal" style={{ maxWidth: 720 }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: 600, maxHeight: "88vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
         <h2>{cliente ? "Editar cliente" : "+ Crear cliente"}</h2>
         <form onSubmit={onSubmit}>
           {error && <div className="alerta-error">{error}</div>}
@@ -547,15 +547,9 @@ export function ModalCliente({
             </div>
           </div>
 
-          <div className="grid-2">
-            <div className="campo">
-              <label>WhatsApp</label>
-              <input value={form.whatsapp ?? ""} onChange={(e) => set("whatsapp", e.target.value)} />
-            </div>
-            <div className="campo">
-              <label>Teléfono 1</label>
-              <input value={form.telefono1 ?? ""} onChange={(e) => set("telefono1", e.target.value)} />
-            </div>
+          <div className="campo">
+            <label>Teléfono 2</label>
+            <input value={form.whatsapp ?? ""} onChange={(e) => set("whatsapp", e.target.value)} />
           </div>
 
           <div className="grid-2">
@@ -582,12 +576,11 @@ export function ModalCliente({
               <select
                 value={form.ciudad ?? ""}
                 onChange={(e) => set("ciudad", e.target.value)}
+                style={{ maxWidth: "100%" }}
               >
                 <option value="">— Seleccionar —</option>
                 {(municipiosPorDepto[form.departamento ?? ""] ?? []).map((m) => (
-                  <option key={m.codigo} value={m.nombre}>
-                    {m.nombre} <span style={{ color: "#999" }}>({m.codigo})</span>
-                  </option>
+                  <option key={m.codigo} value={m.nombre}>{m.nombre}</option>
                 ))}
               </select>
             </div>
