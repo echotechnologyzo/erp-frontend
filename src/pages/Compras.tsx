@@ -24,12 +24,21 @@ import { useAuth } from "../auth/AuthContext";
 const moneda = (v: number) =>
   new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(v);
 
+type DatosPreImport = {
+  sede: string;
+  documento: string;
+  nombre: string;
+  remisionProveedor: string;
+  filas: FilaImportCompra[];
+};
+
 export function Compras() {
   const [compras, setCompras] = useState<Compra[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [modal, setModal] = useState(false);
+  const [preImport, setPreImport] = useState<DatosPreImport | null>(null);
   const [editar, setEditar] = useState<Compra | null>(null);
 
   async function cargar() {
@@ -64,7 +73,7 @@ export function Compras() {
     }
   }
 
-  // --- Importación desde Excel ---
+  // --- Importación desde Excel: solo lee el archivo y abre el modal pre-cargado ---
   async function onArchivoExcel(e: ChangeEvent<HTMLInputElement>) {
     const archivo = e.target.files?.[0];
     if (!archivo) return;
@@ -74,17 +83,21 @@ export function Compras() {
       const buffer = await archivo.arrayBuffer();
       const libro = XLSX.read(buffer);
       const hoja = libro.Sheets[libro.SheetNames[0]];
-      // Cada fila del Excel se mapea a una FilaImportCompra (los encabezados
-      // de la primera fila deben coincidir con estos nombres).
       const filas = XLSX.utils.sheet_to_json<FilaImportCompra>(hoja);
       if (filas.length === 0) throw new Error("El archivo no tiene filas.");
-      const r = await comprasApi.importar(filas);
-      setAviso(`Importación exitosa: ${r.remisionesCreadas} remisiones (${r.filasProcesadas} filas).`);
-      cargar();
+      const primera = filas[0];
+      setPreImport({
+        sede: String(primera.sede ?? ""),
+        documento: String(primera.proveedorDocumento ?? ""),
+        nombre: String(primera.proveedorNombre ?? ""),
+        remisionProveedor: String(primera.remisionProveedor ?? ""),
+        filas,
+      });
+      setModal(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al importar el Excel.");
+      setError(err instanceof Error ? err.message : "Error al leer el Excel.");
     } finally {
-      e.target.value = ""; // permite volver a elegir el mismo archivo
+      e.target.value = "";
     }
   }
 
@@ -210,7 +223,13 @@ export function Compras() {
         </div>
       )}
 
-      {modal && <ModalCrearCompra onCerrar={() => setModal(false)} onCreado={() => { setModal(false); cargar(); }} />}
+      {modal && (
+        <ModalCrearCompra
+          initialData={preImport}
+          onCerrar={() => { setModal(false); setPreImport(null); }}
+          onCreado={() => { setModal(false); setPreImport(null); cargar(); }}
+        />
+      )}
 
       {editar && (
         <ModalEditarCompra
@@ -344,8 +363,16 @@ function ModalEditarCompra({
 // --------------------------------------------------------------------------
 // Modal de creación de remisión de compra.
 // --------------------------------------------------------------------------
-function ModalCrearCompra({ onCerrar, onCreado }: { onCerrar: () => void; onCreado: () => void }) {
-  const { usuario } = useAuth(); // para prellenar la sede asignada al usuario
+function ModalCrearCompra({
+  onCerrar,
+  onCreado,
+  initialData,
+}: {
+  onCerrar: () => void;
+  onCreado: () => void;
+  initialData?: DatosPreImport | null;
+}) {
+  const { usuario } = useAuth();
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [articulos, setArticulos] = useState<Articulo[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -359,19 +386,43 @@ function ModalCrearCompra({ onCerrar, onCreado }: { onCerrar: () => void; onCrea
     { articuloId: "", cantidad: 1, costoUnitario: 0 },
   ]);
 
-  // Buscador de proveedor (por nombre o NIT) para reutilizar uno existente.
   const [provBuscar, setProvBuscar] = useState("");
   const [provOpc, setProvOpc] = useState<Proveedor[]>([]);
 
   useEffect(() => {
-    catalogosApi.sedes().then((s) => {
+    Promise.all([catalogosApi.sedes(), articulosApi.listar("")]).then(([s, arts]) => {
       setSedes(s);
-      const propia = usuario?.sedeId && s.some((x) => x.id === usuario.sedeId)
-        ? usuario.sedeId
-        : s[0]?.id;
-      if (propia) setSedeId(propia);
+      setArticulos(arts);
+
+      if (initialData) {
+        // Pre-llenado desde Excel: buscar sede por nombre
+        const sedePorNombre = s.find(
+          (x) => x.nombre.trim().toLowerCase() === initialData.sede.trim().toLowerCase()
+        );
+        const sedeInicial = sedePorNombre?.id
+          ?? (usuario?.sedeId && s.some((x) => x.id === usuario.sedeId) ? usuario.sedeId : s[0]?.id);
+        if (sedeInicial) setSedeId(sedeInicial);
+
+        setDocumento(initialData.documento);
+        setNombre(initialData.nombre);
+        setRemisionProveedor(initialData.remisionProveedor);
+
+        // Mapear articuloCodigo → articuloId
+        const porCodigo = new Map(arts.map((a) => [String(a.codigo).trim(), a.id]));
+        const itemsMapeados = initialData.filas.map((f) => ({
+          articuloId: porCodigo.get(String(f.articuloCodigo).trim()) ?? "",
+          cantidad: Number(f.cantidad) || 1,
+          costoUnitario: Number(f.costoUnitario) || 0,
+          descuento: Number(f.descuento) || 0,
+        }));
+        if (itemsMapeados.length > 0) setItems(itemsMapeados);
+      } else {
+        const propia = usuario?.sedeId && s.some((x) => x.id === usuario.sedeId)
+          ? usuario.sedeId
+          : s[0]?.id;
+        if (propia) setSedeId(propia);
+      }
     });
-    articulosApi.listar().then(setArticulos);
   }, []);
 
   // Búsqueda de proveedores con debounce sencillo.
