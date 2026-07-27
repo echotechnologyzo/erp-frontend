@@ -216,7 +216,7 @@ export function Remisiones() {
     <div>
       <div className="dash-topbar">
         <h2>Remisiones de venta</h2>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <button className="btn-secundario" onClick={descargarPlantilla}>
             Descargar plantilla Excel
           </button>
@@ -509,7 +509,7 @@ function ModalCrearRemision({
   return (
     <>
     <div className="modal-fondo">
-      <div className="modal" style={{ maxWidth: 820 }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: 820, maxHeight: "92vh", overflowY: "auto", overflowX: "hidden" }} onClick={(e) => e.stopPropagation()}>
         <h2>{base ? "+ Duplicar remisión de venta" : "+ Crear remisión de venta"}</h2>
         <form onSubmit={onSubmit}>
           {error && <div className="alerta-error">{error}</div>}
@@ -816,7 +816,7 @@ function CuentaCobroPDF({ data, onCerrar, remisionId }: { data: CuentaCobro; onC
       <div className="modal" style={{ maxWidth: 900, maxHeight: "92vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-acciones no-print" style={{ justifyContent: "space-between", marginTop: 0, marginBottom: 12 }}>
           <h2 style={{ margin: 0 }}>Cuenta de cobro {data.numero}</h2>
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button className="btn-secundario" onClick={onCerrar}>Cerrar</button>
             <button className="btn-secundario" style={{ width: "auto" }} onClick={() => { setEmailDestino(""); setAvisoEmail(null); setModalEmail(true); }}>
               Enviar por correo
@@ -1076,7 +1076,7 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
       <div className="modal" style={{ maxWidth: 900, maxHeight: "92vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-acciones no-print" style={{ justifyContent: "space-between", marginTop: 0, marginBottom: 12 }}>
           <h2 style={{ margin: 0 }}>Remisión {r.documento}</h2>
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button className="btn-secundario" onClick={onCerrar}>Cerrar</button>
             <button className="btn-secundario" style={{ width: "auto" }} onClick={() => { setEmailDestino(r.cliente.email ?? ""); setAvisoEmail(null); setModalEmail(true); }}>
               Enviar por correo

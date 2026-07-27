@@ -542,6 +542,16 @@ button {
    aparece un botón hamburguesa que lo despliega como panel deslizable.
    ========================================================================== */
 
+/* Laptop pequeño (< 1280px): grid-3 pasa a 2 columnas, modal más estrecho */
+@media (max-width: 1280px) {
+  .grid-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .modal {
+    max-width: min(620px, calc(100vw - 40px));
+  }
+}
+
 /* Las tablas siempre pueden desplazarse en horizontal si no caben */
 .tabla-wrap {
   overflow-x: auto;
@@ -667,15 +677,33 @@ button {
     gap: 12px;
   }
 
+  /* Los botones de la barra superior hacen wrap */
+  .dash-topbar > div {
+    flex-wrap: wrap;
+  }
+
   /* Las rejillas de dos columnas se apilan */
   .grid-2 {
     grid-template-columns: 1fr;
+  }
+
+  /* Las rejillas de tres columnas se apilan en dos o uno */
+  .grid-3 {
+    grid-template-columns: 1fr 1fr;
   }
 
   /* El buscador y sus controles se apilan */
   .barra-busqueda {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  /* Líneas de artículo en remisión: hacen wrap */
+  .linea-item {
+    flex-wrap: wrap;
+  }
+  .linea-item select {
+    min-width: 160px;
   }
 
   /* Los modales aprovechan casi todo el ancho disponible */
