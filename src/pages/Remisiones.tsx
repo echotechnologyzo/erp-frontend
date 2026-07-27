@@ -986,8 +986,6 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
     const rawTel = r.cliente.whatsapp ?? r.cliente.telefono ?? "";
     const solo = rawTel.replace(/\D/g, "");
     const numero = solo.startsWith("57") ? solo : `57${solo}`;
-    const total = r.detalles.reduce((s, d) => s + Number(d.cantidad) * Number(d.precioUnitario), 0);
-    const totalFmt = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(total);
     const msg = encodeURIComponent(
       `Hola ${r.cliente.nombre} buen día, esperamos te encuentres muy bien, adjuntamos factura de tu producto, quedamos muy atentos a cualquier inquietud🤗.\n\nGracias por tu compra. Te invitamos a que nos sigas en nuestras redes sociales. https://instagram.com/echo_tecnologiaencasa?igshid=ODBkMDk1MTU=\n\nConoce nuestro catálogo 😆`
     );
