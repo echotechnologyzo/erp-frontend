@@ -88,25 +88,46 @@ export function Compras() {
     }
   }
 
-  // Descarga una plantilla de Excel con los encabezados esperados.
-  function descargarPlantilla() {
+  // Descarga una plantilla de Excel con los encabezados esperados y una hoja
+  // de referencia con las sedes y códigos de artículos disponibles.
+  async function descargarPlantilla() {
+    const [sedes, articulos] = await Promise.all([
+      catalogosApi.sedes(),
+      articulosApi.listar(""),
+    ]);
+
     const ejemplo: FilaImportCompra[] = [
       {
-        sede: "Bogotá",
+        sede: sedes[0]?.nombre ?? "Bogotá",
         proveedorDocumento: "912000471",
-        proveedorNombre: "AMAZON.COM SALES, INC",
+        proveedorNombre: "PROVEEDOR EJEMPLO S.A.",
         proveedorDireccion: "",
-        remisionProveedor: "20/26/05/2026",
-        articuloCodigo: "35",
-        descripcion: "Fire TV Stick 4K",
-        cantidad: 10,
-        costoUnitario: 110000,
+        remisionProveedor: "FAC-001",
+        articuloCodigo: articulos[0]?.codigo ?? "001",
+        descripcion: articulos[0]?.nombre ?? "Producto ejemplo",
+        cantidad: 1,
+        costoUnitario: 100000,
         descuento: 0,
       },
     ];
-    const hoja = XLSX.utils.json_to_sheet(ejemplo);
+
+    const hojaCompras = XLSX.utils.json_to_sheet(ejemplo);
+
+    // Hoja de referencia: sedes y artículos válidos
+    const refSedes = sedes.map((s) => ({ Sede: s.nombre }));
+    const refArticulos = articulos.map((a) => ({
+      "Código (articuloCodigo)": a.codigo,
+      "Nombre del artículo": a.nombre,
+    }));
+
+    const hojaSedes = XLSX.utils.json_to_sheet(refSedes);
+    const hojaArticulos = XLSX.utils.json_to_sheet(refArticulos);
+
     const libro = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(libro, hoja, "Compras");
+    XLSX.utils.book_append_sheet(libro, hojaCompras, "Compras");
+    XLSX.utils.book_append_sheet(libro, hojaSedes, "Sedes válidas");
+    XLSX.utils.book_append_sheet(libro, hojaArticulos, "Artículos válidos");
+
     XLSX.writeFile(libro, "plantilla_remisiones_compra.xlsx");
   }
 
