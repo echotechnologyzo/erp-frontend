@@ -979,8 +979,20 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
 
   const [enviandoEmail, setEnviandoEmail] = useState(false);
   const [modalEmail, setModalEmail] = useState(false);
-  const [emailDestino, setEmailDestino] = useState(r.cliente.telefono ?? "");
+  const [emailDestino, setEmailDestino] = useState(r.cliente.email ?? "");
   const [avisoEmail, setAvisoEmail] = useState<string | null>(null);
+
+  function abrirWhatsApp() {
+    const rawTel = r.cliente.whatsapp ?? r.cliente.telefono ?? "";
+    const solo = rawTel.replace(/\D/g, "");
+    const numero = solo.startsWith("57") ? solo : `57${solo}`;
+    const total = r.detalles.reduce((s, d) => s + Number(d.cantidad) * Number(d.precioUnitario), 0);
+    const totalFmt = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 }).format(total);
+    const msg = encodeURIComponent(
+      `Hola ${r.cliente.nombre}, te compartimos la remisión N° ${r.documento} de Echo Tecnología por un total de ${totalFmt}. Quedamos atentos a cualquier consulta.`
+    );
+    window.open(`https://web.whatsapp.com/send?phone=${numero}&text=${msg}`, "_blank");
+  }
 
   function imprimir() {
     const tituloPrevio = document.title;
@@ -1014,8 +1026,17 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
           <h2 style={{ margin: 0 }}>Remisión {r.documento}</h2>
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn-secundario" onClick={onCerrar}>Cerrar</button>
-            <button className="btn-secundario" style={{ width: "auto" }} onClick={() => { setEmailDestino(""); setAvisoEmail(null); setModalEmail(true); }}>
+            <button className="btn-secundario" style={{ width: "auto" }} onClick={() => { setEmailDestino(r.cliente.email ?? ""); setAvisoEmail(null); setModalEmail(true); }}>
               Enviar por correo
+            </button>
+            <button
+              className="btn-secundario"
+              style={{ width: "auto", background: "#25D366", color: "#fff", borderColor: "#25D366" }}
+              onClick={abrirWhatsApp}
+              disabled={!(r.cliente.whatsapp ?? r.cliente.telefono)}
+              title={!(r.cliente.whatsapp ?? r.cliente.telefono) ? "El cliente no tiene teléfono registrado" : ""}
+            >
+              WhatsApp
             </button>
             <button className="btn-primario" style={{ width: "auto" }} onClick={imprimir}>
               Imprimir / Guardar PDF

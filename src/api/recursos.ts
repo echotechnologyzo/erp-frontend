@@ -451,6 +451,8 @@ export interface RemisionCompleta {
     documento: string;
     tipoIdentificacion: string | null;
     telefono: string;
+    whatsapp: string | null;
+    email: string | null;
     direccion: string | null;
     ciudad: string | null;
     departamento: string | null;
