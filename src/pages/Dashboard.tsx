@@ -109,10 +109,10 @@ export function Dashboard() {
           <Link id="inicio">Inicio</Link>
           <Link id="articulos">Artículos</Link>
           <Link id="inventario">Inventario</Link>
-          <Link id="compras">Compras</Link>
+          {esAdmin && <Link id="compras">Compras</Link>}
           <Link id="proveedores">Proveedores</Link>
           <Link id="clientes">Clientes</Link>
-          <Link id="empleados">Empleados</Link>
+          {esAdmin && <Link id="empleados">Empleados</Link>}
           <Link id="remisiones">Remisiones</Link>
           {esAdmin && <Link id="usuarios">Usuarios</Link>}
           {esAdmin && <Link id="comisiones">Comisiones</Link>}
@@ -137,10 +137,10 @@ export function Dashboard() {
         <Suspense fallback={<div style={{ padding: 32 }}>Cargando módulo…</div>}>
           {vista === "articulos"   && <Articulos />}
           {vista === "inventario"  && <Inventario />}
-          {vista === "compras"     && <Compras />}
+          {vista === "compras"     && esAdmin && <Compras />}
           {vista === "proveedores" && <Proveedores />}
           {vista === "clientes"    && <Clientes />}
-          {vista === "empleados"   && <Empleados />}
+          {vista === "empleados"   && esAdmin && <Empleados />}
           {vista === "remisiones"  && <Remisiones />}
           {vista === "comisiones"  && esAdmin && <Comisiones />}
           {vista === "reportes"    && esAdmin && <Reportes />}
@@ -168,18 +168,17 @@ function Inicio({
   const modulos: { id: Vista; titulo: string; desc: string; fase: string }[] = [
     { id: "articulos", titulo: "Artículos", desc: "Crear y editar productos.", fase: "Disponible" },
     { id: "inventario", titulo: "Inventario", desc: "Existencias, ajustes y traslados.", fase: "Disponible" },
-    { id: "compras", titulo: "Compras", desc: "Remisiones de compra + Excel.", fase: "Disponible" },
     { id: "proveedores", titulo: "Proveedores", desc: "Directorio de proveedores.", fase: "Disponible" },
     { id: "clientes", titulo: "Clientes", desc: "Directorio + importar/exportar.", fase: "Disponible" },
-    { id: "empleados", titulo: "Empleados", desc: "Personal por sede.", fase: "Disponible" },
     { id: "remisiones", titulo: "Remisiones", desc: "Ventas, garantía e impresión PDF.", fase: "Disponible" },
   ];
   const modulosAdmin: { id: Vista; titulo: string; desc: string; fase: string }[] = [
+    { id: "compras", titulo: "Compras", desc: "Remisiones de compra + Excel.", fase: "Disponible" },
+    { id: "empleados", titulo: "Empleados", desc: "Personal por sede.", fase: "Disponible" },
     { id: "usuarios", titulo: "Usuarios", desc: "Crear y administrar usuarios.", fase: "Disponible" },
     { id: "comisiones", titulo: "Comisiones", desc: "Pago a vendedoras (4% / 1%).", fase: "Disponible" },
     { id: "reportes", titulo: "Reportes", desc: "Ventas, utilidades, top productos.", fase: "Disponible" },
   ];
-
   return (
     <>
       <div className="inicio-logo">

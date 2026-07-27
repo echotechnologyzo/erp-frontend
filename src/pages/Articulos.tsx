@@ -5,6 +5,7 @@
 // encabezados tolerando acentos/codificación y carga el stock inicial por sede).
 // ==========================================================================
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useAuth } from "../auth/AuthContext";
 import * as XLSX from "xlsx";
 import { leerLibroExcel } from "../utils/excel";
 import {
@@ -484,6 +485,8 @@ function ModalArticulo({
   onCerrar: () => void;
   onGuardado: () => void;
 }) {
+  const { usuario } = useAuth();
+  const esAdmin = usuario?.rol === "ADMIN";
   const esEdicion = !!articulo;
   const [form, setForm] = useState<NuevoArticulo>({
     codigo: articulo?.codigo ?? "",
@@ -563,15 +566,17 @@ function ModalArticulo({
           </div>
 
           <div className="grid-2">
-            <div className="campo">
-              <label>Costo</label>
-              <input
-                type="number"
-                min="0"
-                value={form.costo}
-                onChange={(e) => set("costo", Number(e.target.value))}
-              />
-            </div>
+            {esAdmin && (
+              <div className="campo">
+                <label>Costo</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.costo}
+                  onChange={(e) => set("costo", Number(e.target.value))}
+                />
+              </div>
+            )}
             <div className="campo">
               <label>Precio: Tarifa normal</label>
               <input

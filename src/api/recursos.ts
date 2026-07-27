@@ -619,6 +619,11 @@ export const remisionesApi = {
       method: "POST",
       body: JSON.stringify({ emailDestinatario }),
     }),
+  enviarCuentaCobroCorreo: (id: string, emailDestinatario?: string) =>
+    api<{ ok: boolean; enviadoA: string }>(`/remisiones/${id}/enviar-cuenta-cobro-correo`, {
+      method: "POST",
+      body: JSON.stringify({ emailDestinatario }),
+    }),
 };
 
 // --- Usuarios (solo ADMIN) ---

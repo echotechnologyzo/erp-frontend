@@ -45,6 +45,7 @@ export function Remisiones() {
   const [imprimir, setImprimir] = useState<RemisionCompleta | null>(null);
   const [modalConsec, setModalConsec] = useState(false);
   const [cuentaCobro, setCuentaCobro] = useState<CuentaCobro | null>(null);
+  const [cuentaCobroRemisionId, setCuentaCobroRemisionId] = useState<string>("");
   const { usuario } = useAuth();
   const esAdmin = usuario?.rol === "ADMIN";
 
@@ -101,6 +102,7 @@ export function Remisiones() {
     try {
       const data = await remisionesApi.cuentaCobro(id);
       setCuentaCobro(data);
+      setCuentaCobroRemisionId(id);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al generar cuenta de cobro.");
     }
@@ -370,7 +372,7 @@ export function Remisiones() {
 
       {imprimir && <RemisionImprimible remision={imprimir} onCerrar={() => setImprimir(null)} />}
 
-      {cuentaCobro && <CuentaCobroPDF data={cuentaCobro} onCerrar={() => setCuentaCobro(null)} />}
+      {cuentaCobro && <CuentaCobroPDF data={cuentaCobro} remisionId={cuentaCobroRemisionId} onCerrar={() => setCuentaCobro(null)} />}
 
       {modalConsec && <ModalConsecutivos onCerrar={() => setModalConsec(false)} />}
     </div>
@@ -765,9 +767,27 @@ function ModalConsecutivos({ onCerrar }: { onCerrar: () => void }) {
 // --------------------------------------------------------------------------
 // Componente para generar y descargar la CUENTA DE COBRO en PDF.
 // --------------------------------------------------------------------------
-function CuentaCobroPDF({ data, onCerrar }: { data: CuentaCobro; onCerrar: () => void }) {
+function CuentaCobroPDF({ data, onCerrar, remisionId }: { data: CuentaCobro; onCerrar: () => void; remisionId: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [generando, setGenerando] = useState(false);
+  const [modalEmail, setModalEmail] = useState(false);
+  const [emailDestino, setEmailDestino] = useState("");
+  const [enviandoEmail, setEnviandoEmail] = useState(false);
+  const [avisoEmail, setAvisoEmail] = useState<string | null>(null);
+
+  async function enviarEmail() {
+    setEnviandoEmail(true);
+    setAvisoEmail(null);
+    try {
+      const res = await remisionesApi.enviarCuentaCobroCorreo(remisionId, emailDestino || undefined);
+      setAvisoEmail(`Correo enviado a ${res.enviadoA}`);
+      setTimeout(() => setModalEmail(false), 2500);
+    } catch (e) {
+      setAvisoEmail(e instanceof Error ? e.message : "Error al enviar el correo.");
+    } finally {
+      setEnviandoEmail(false);
+    }
+  }
 
   const pesos = (v: number) => "$" + Math.round(Number(v)).toLocaleString("en-US");
   const fechaTxt = (s: string) => new Date(s).toLocaleDateString("es-CO");
@@ -798,11 +818,45 @@ function CuentaCobroPDF({ data, onCerrar }: { data: CuentaCobro; onCerrar: () =>
           <h2 style={{ margin: 0 }}>Cuenta de cobro {data.numero}</h2>
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn-secundario" onClick={onCerrar}>Cerrar</button>
+            <button className="btn-secundario" style={{ width: "auto" }} onClick={() => { setEmailDestino(""); setAvisoEmail(null); setModalEmail(true); }}>
+              Enviar por correo
+            </button>
             <button className="btn-primario" style={{ width: "auto" }} onClick={descargarPDF} disabled={generando}>
               {generando ? "Generando PDF…" : "Descargar PDF"}
             </button>
           </div>
         </div>
+
+        {modalEmail && (
+          <div className="modal-fondo" onClick={() => setModalEmail(false)}>
+            <div className="modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+              <h3 style={{ marginBottom: 16 }}>Enviar cuenta de cobro por correo</h3>
+              {avisoEmail && (
+                <div className={avisoEmail.startsWith("Correo enviado") ? "alerta-exito" : "alerta-error"}>
+                  {avisoEmail}
+                </div>
+              )}
+              <div className="campo">
+                <label>Correo destino</label>
+                <input
+                  type="email"
+                  value={emailDestino}
+                  onChange={(e) => setEmailDestino(e.target.value)}
+                  placeholder="Correo del cliente"
+                />
+                <span style={{ fontSize: 12, color: "var(--muted, #888)", marginTop: 4, display: "block" }}>
+                  Dejar vacío para usar el correo registrado del cliente.
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
+                <button className="btn-secundario" onClick={() => setModalEmail(false)}>Cancelar</button>
+                <button className="btn-primario" style={{ width: "auto" }} onClick={enviarEmail} disabled={enviandoEmail}>
+                  {enviandoEmail ? "Enviando…" : "Enviar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Documento imprimible */}
         <div ref={ref} style={{ padding: 20, fontFamily: "Arial, sans-serif", fontSize: 12, color: "#000" }}>
