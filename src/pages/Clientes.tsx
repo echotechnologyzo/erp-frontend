@@ -513,11 +513,12 @@ export function ModalCliente({
 
   return (
     <div className="modal-fondo">
-      <div className="modal" style={{ maxWidth: 600, maxHeight: "88vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal" style={{ maxWidth: 640, overflowX: "hidden" }} onClick={(e) => e.stopPropagation()}>
         <h2>{cliente ? "Editar cliente" : "+ Crear cliente"}</h2>
         <form onSubmit={onSubmit}>
           {error && <div className="alerta-error">{error}</div>}
 
+          {/* Fila 1: Tipo ID + Número ID */}
           <div className="grid-2">
             <div className="campo">
               <label>Tipo de identificación</label>
@@ -531,12 +532,14 @@ export function ModalCliente({
             </div>
           </div>
 
+          {/* Fila 2: Nombre */}
           <div className="campo">
             <label>Nombre / Razón social *</label>
             <input value={form.nombre} onChange={(e) => set("nombre", e.target.value)} required />
           </div>
 
-          <div className="grid-2">
+          {/* Fila 3: Email + Celular + Teléfono 2 */}
+          <div className="grid-3">
             <div className="campo">
               <label>Email</label>
               <input type="email" value={form.email ?? ""} onChange={(e) => set("email", e.target.value)} />
@@ -545,13 +548,13 @@ export function ModalCliente({
               <label>Celular</label>
               <input value={form.celular ?? ""} onChange={(e) => set("celular", e.target.value)} />
             </div>
+            <div className="campo">
+              <label>Teléfono 2</label>
+              <input value={form.whatsapp ?? ""} onChange={(e) => set("whatsapp", e.target.value)} />
+            </div>
           </div>
 
-          <div className="campo">
-            <label>Teléfono 2</label>
-            <input value={form.whatsapp ?? ""} onChange={(e) => set("whatsapp", e.target.value)} />
-          </div>
-
+          {/* Fila 4: Departamento + Ciudad */}
           <div className="grid-2">
             <div className="campo">
               <label>Departamento</label>
@@ -559,7 +562,6 @@ export function ModalCliente({
                 value={form.departamento ?? ""}
                 onChange={(e) => {
                   const depto = e.target.value;
-                  // Al cambiar departamento, reiniciar ciudad al primer municipio
                   const muns = municipiosPorDepto[depto] ?? [];
                   set("departamento", depto);
                   set("ciudad", muns[0]?.nombre ?? "");
@@ -573,11 +575,7 @@ export function ModalCliente({
             </div>
             <div className="campo">
               <label>Ciudad / Municipio</label>
-              <select
-                value={form.ciudad ?? ""}
-                onChange={(e) => set("ciudad", e.target.value)}
-                style={{ maxWidth: "100%" }}
-              >
+              <select value={form.ciudad ?? ""} onChange={(e) => set("ciudad", e.target.value)}>
                 <option value="">— Seleccionar —</option>
                 {(municipiosPorDepto[form.departamento ?? ""] ?? []).map((m) => (
                   <option key={m.codigo} value={m.nombre}>{m.nombre}</option>
@@ -586,12 +584,14 @@ export function ModalCliente({
             </div>
           </div>
 
+          {/* Fila 5: Dirección */}
           <div className="campo">
             <label>Dirección</label>
             <input value={form.direccion ?? ""} onChange={(e) => set("direccion", e.target.value)} />
           </div>
 
-          <div className="grid-2">
+          {/* Fila 6: Tipo cliente + Tarifa + Vendedor */}
+          <div className="grid-3">
             <div className="campo">
               <label>Tipo de cliente</label>
               <input value={form.tipoCliente ?? ""} onChange={(e) => set("tipoCliente", e.target.value)} />
@@ -600,23 +600,18 @@ export function ModalCliente({
               <label>Tarifa de precios</label>
               <input value={form.tarifaPrecios ?? ""} onChange={(e) => set("tarifaPrecios", e.target.value)} />
             </div>
-          </div>
-
-          <div className="campo">
-            <label>Vendedor</label>
-            <select value={form.vendedor ?? ""} onChange={(e) => set("vendedor", e.target.value)}>
-              <option value="">— Sin asignar —</option>
-              {/* Si el valor actual no está en Empleados, lo conservamos como opción. */}
-              {form.vendedor && !empleados.some((em) => em.nombre === form.vendedor) && (
-                <option value={form.vendedor}>{form.vendedor} (actual)</option>
-              )}
-              {empleados.map((em) => (
-                <option key={em.id} value={em.nombre}>{em.nombre}</option>
-              ))}
-            </select>
-            {empleados.length === 0 && (
-              <small className="muted">No hay empleados aún. Créalos en la pantalla Empleados.</small>
-            )}
+            <div className="campo">
+              <label>Vendedor</label>
+              <select value={form.vendedor ?? ""} onChange={(e) => set("vendedor", e.target.value)}>
+                <option value="">— Sin asignar —</option>
+                {form.vendedor && !empleados.some((em) => em.nombre === form.vendedor) && (
+                  <option value={form.vendedor}>{form.vendedor} (actual)</option>
+                )}
+                {empleados.map((em) => (
+                  <option key={em.id} value={em.nombre}>{em.nombre}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="campo">

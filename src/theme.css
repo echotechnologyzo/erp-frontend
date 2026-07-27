@@ -376,6 +376,18 @@ button {
   gap: 16px;
 }
 
+/* Evita que los hijos del grid desborden su celda */
+.grid-2 > *,
+.grid-3 > * {
+  min-width: 0;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
 .modal-acciones {
   display: flex;
   justify-content: flex-end;
@@ -392,6 +404,8 @@ button {
   border-radius: 10px;
   font-size: 15px;
   background: #fff;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Líneas de ítems en la remisión de compra */
