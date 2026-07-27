@@ -973,14 +973,15 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
   const ref = useRef<HTMLDivElement>(null);
   const fechaTxt = (s: string | null) => (s ? new Date(s).toLocaleString("es-CO") : "—");
   const totalUnidades = r.detalles.reduce((a, d) => a + Number(d.cantidad), 0);
-  // La garantía solo aplica a productos (los valores a terceros, p. ej. flete,
-  // no llevan garantía). Si todas comparten meses, mostramos un texto único.
   const conGarantia = r.detalles.filter((d) => !d.esTercero);
   const garantias = [...new Set(conGarantia.map((d) => d.garantiaMeses))];
   const dirEmisor = r.sede.direccion ?? "Antioquia / Medellín / Carrera 55 #12Sur 09 Torre 3 Apto 9920";
 
-  // Imprime/guarda como PDF; el nombre del archivo sale del título del documento,
-  // así que lo fijamos a "Remisión <No.>" y lo restauramos al terminar.
+  const [enviandoEmail, setEnviandoEmail] = useState(false);
+  const [modalEmail, setModalEmail] = useState(false);
+  const [emailDestino, setEmailDestino] = useState(r.cliente.telefono ?? "");
+  const [avisoEmail, setAvisoEmail] = useState<string | null>(null);
+
   function imprimir() {
     const tituloPrevio = document.title;
     document.title = `Remisión ${r.documento}`;
@@ -992,22 +993,68 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
     window.print();
   }
 
+  async function enviarEmail() {
+    setEnviandoEmail(true);
+    setAvisoEmail(null);
+    try {
+      const res = await remisionesApi.enviarCorreo(r.id, emailDestino || undefined);
+      setAvisoEmail(`Correo enviado a ${res.enviadoA}`);
+      setTimeout(() => setModalEmail(false), 2500);
+    } catch (e) {
+      setAvisoEmail(e instanceof Error ? e.message : "Error al enviar el correo.");
+    } finally {
+      setEnviandoEmail(false);
+    }
+  }
+
   return (
-    // OJO: NO poner "no-print" en este contenedor: al imprimir, display:none en
-    // un ancestro oculta también el documento (.remision-print) y el PDF sale en
-    // blanco. La impresión se controla con visibility en @media print; aquí solo
-    // marcamos como no-print la barra de botones.
     <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 900, maxHeight: "92vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-acciones no-print" style={{ justifyContent: "space-between", marginTop: 0, marginBottom: 12 }}>
           <h2 style={{ margin: 0 }}>Remisión {r.documento}</h2>
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn-secundario" onClick={onCerrar}>Cerrar</button>
+            <button className="btn-secundario" style={{ width: "auto" }} onClick={() => { setEmailDestino(""); setAvisoEmail(null); setModalEmail(true); }}>
+              Enviar por correo
+            </button>
             <button className="btn-primario" style={{ width: "auto" }} onClick={imprimir}>
               Imprimir / Guardar PDF
             </button>
           </div>
         </div>
+
+        {/* Modal envío de correo */}
+        {modalEmail && (
+          <div className="modal-fondo" onClick={() => setModalEmail(false)}>
+            <div className="modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+              <h3 style={{ marginBottom: 16 }}>Enviar remisión por correo</h3>
+              {avisoEmail && (
+                <div className={avisoEmail.startsWith("Correo enviado") ? "alerta-exito" : "alerta-error"}>
+                  {avisoEmail}
+                </div>
+              )}
+              <div className="campo">
+                <label>Correo destino</label>
+                <input
+                  type="email"
+                  value={emailDestino}
+                  onChange={(e) => setEmailDestino(e.target.value)}
+                  placeholder={`Correo del cliente`}
+                />
+                <span style={{ fontSize: 12, color: "var(--muted, #888)", marginTop: 4, display: "block" }}>
+                  Dejar vacío para usar el correo registrado del cliente.
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
+                <button className="btn-secundario" onClick={() => setModalEmail(false)}>Cancelar</button>
+                <button className="btn-primario" style={{ width: "auto" }} onClick={enviarEmail} disabled={enviandoEmail}>
+                  {enviandoEmail ? "Enviando…" : "Enviar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
 
         {/* Documento imprimible */}
         <div className="remision-print" ref={ref}>

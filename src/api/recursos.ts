@@ -612,6 +612,11 @@ export const remisionesApi = {
   },
   cuentaCobro: (id: string) =>
     api<CuentaCobro>(`/remisiones/${id}/cuenta-cobro`),
+  enviarCorreo: (id: string, emailDestinatario?: string) =>
+    api<{ ok: boolean; enviadoA: string }>(`/remisiones/${id}/enviar-correo`, {
+      method: "POST",
+      body: JSON.stringify({ emailDestinatario }),
+    }),
 };
 
 // --- Usuarios (solo ADMIN) ---
@@ -707,4 +712,12 @@ export const reportesApi = {
     return api<ProductoTop[]>(`/reportes/top-productos${s ? `?${s}` : ""}`);
   },
   valorMercancia: () => api<ValorMercancia>("/reportes/valor-mercancia"),
+};
+
+// --- Auth público (recuperación de contraseña) ---
+export const authApi = {
+  olvidarPassword: (email: string) =>
+    api<{ ok: boolean }>("/auth/forgot-password", { method: "POST", body: JSON.stringify({ email }) }),
+  resetPassword: (token: string, password: string) =>
+    api<{ ok: boolean }>("/auth/reset-password", { method: "POST", body: JSON.stringify({ token, password }) }),
 };
