@@ -22,14 +22,28 @@ export async function api<T>(
 ): Promise<T> {
   const token = tokenStore.get();
 
-  const resp = await fetch(`${API_URL}${ruta}`, {
-    ...opciones,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...opciones.headers,
-    },
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30000); // 30 s máximo
+
+  let resp: Response;
+  try {
+    resp = await fetch(`${API_URL}${ruta}`, {
+      ...opciones,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...opciones.headers,
+      },
+    });
+  } catch (e: unknown) {
+    if (e instanceof Error && e.name === "AbortError") {
+      throw new Error("La petición tardó demasiado. Verifica tu conexión e intenta de nuevo.");
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
 
   const datos = await resp.json().catch(() => ({}));
 
