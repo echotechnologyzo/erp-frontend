@@ -595,9 +595,9 @@ function ModalCrearRemision({
                   onChange={(e) => actualizarItem(idx, "cantidad", Number(e.target.value))}
                 />
                 <input
-                  type="number" min="0" title="Precio unitario" style={{ width: 120 }}
-                  value={it.precioUnitario ?? 0}
-                  onChange={(e) => actualizarItem(idx, "precioUnitario", Number(e.target.value))}
+                  type="text" inputMode="numeric" title="Precio unitario" style={{ width: 120 }}
+                  value={it.precioUnitario ? Number(it.precioUnitario).toLocaleString("es-CO") : ""}
+                  onChange={(e) => actualizarItem(idx, "precioUnitario", Number(e.target.value.replace(/\D/g, "")) || 0)}
                 />
                 <input
                   type="number" min="0" step="1" title="Garantía (meses)" style={{ width: 70 }}

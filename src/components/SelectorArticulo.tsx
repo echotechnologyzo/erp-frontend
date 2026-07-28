@@ -23,11 +23,12 @@ export function SelectorArticulo({
   const [q, setQ] = useState("");
   const [abierto, setAbierto] = useState(false);
   const elegido = articulos.find((a) => a.id === valor);
-  const filtro = q.trim().toLowerCase();
-  const opciones = (filtro
-    ? articulos.filter(
-        (a) => a.nombre.toLowerCase().includes(filtro) || a.codigo.toLowerCase().includes(filtro)
-      )
+  const palabras = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const opciones = (palabras.length
+    ? articulos.filter((a) => {
+        const texto = `${a.nombre} ${a.codigo}`.toLowerCase();
+        return palabras.every((p) => texto.includes(p));
+      })
     : articulos
   ).slice(0, 15);
 

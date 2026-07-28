@@ -551,9 +551,9 @@ function ModalCrearCompra({
                 onChange={(e) => actualizarItem(idx, "cantidad", Number(e.target.value))}
               />
               <input
-                type="number" min="0" title="Costo unitario" style={{ width: 130 }}
-                value={it.costoUnitario}
-                onChange={(e) => actualizarItem(idx, "costoUnitario", Number(e.target.value))}
+                type="text" inputMode="numeric" title="Costo unitario" style={{ width: 130 }}
+                value={it.costoUnitario ? it.costoUnitario.toLocaleString("es-CO") : ""}
+                onChange={(e) => actualizarItem(idx, "costoUnitario", Number(e.target.value.replace(/\D/g, "")) || 0)}
               />
               <span className="muted" style={{ minWidth: 110, textAlign: "right" }}>
                 {moneda(it.cantidad * it.costoUnitario)}
