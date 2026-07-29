@@ -1061,8 +1061,22 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
 
   // Limpia un valor para el CSV de EnvioClick: sin tildes, sin comas, en mayúsculas, truncado.
   function limpiarCampo(s: string | null, max: number) {
-    return sinTildes(s ?? "").replace(/,/g, "").toUpperCase().trim().slice(0, max);
+    return sinTildes(s ?? "").replace(/,/g, "").replace(/\./g, "").toUpperCase().trim().slice(0, max);
   }
+
+  // Ciudad → departamento oficial según EnvioClick (ciudades especiales o D.C.).
+  const CIUDAD_A_DPTO: Record<string, string> = {
+    "BOGOTA": "CUNDINAMARCA", "BOGOTA DC": "CUNDINAMARCA",
+    "MEDELLIN": "ANTIOQUIA", "CALI": "VALLE DEL CAUCA",
+    "BARRANQUILLA": "ATLANTICO", "CARTAGENA": "BOLIVAR",
+    "CUCUTA": "NORTE DE SANTANDER", "BUCARAMANGA": "SANTANDER",
+    "PEREIRA": "RISARALDA", "MANIZALES": "CALDAS",
+    "SANTA MARTA": "MAGDALENA", "IBAGUE": "TOLIMA",
+    "PASTO": "NARINO", "VILLAVICENCIO": "META",
+    "MONTERIA": "CORDOBA", "SINCELEJO": "SUCRE",
+    "VALLEDUPAR": "CESAR", "NEIVA": "HUILA",
+    "ARMENIA": "QUINDIO", "POPAYAN": "CAUCA",
+  };
 
   function generarCSVEnvioClick() {
     const partes = r.cliente.nombre.trim().split(/\s+/);
@@ -1070,7 +1084,7 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
     const apellidoDest = (partes.slice(1).join(" ") || "N/A").slice(0, 21);
     const telDest = (r.cliente.whatsapp ?? r.cliente.telefono ?? "").replace(/\D/g, "").slice(0, 10);
     const ciudadDest = limpiarCampo(r.cliente.ciudad, 30);
-    const dptoDest = limpiarCampo(r.cliente.departamento, 30);
+    const dptoDest = CIUDAD_A_DPTO[ciudadDest] ?? limpiarCampo(r.cliente.departamento, 30);
     const dirDest = (r.cliente.direccion ?? "").slice(0, 50);
 
     const CABECERA = [
