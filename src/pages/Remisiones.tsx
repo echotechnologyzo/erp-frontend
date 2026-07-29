@@ -1036,6 +1036,122 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
   const [emailDestino, setEmailDestino] = useState(r.cliente.email ?? "");
   const [avisoEmail, setAvisoEmail] = useState<string | null>(null);
 
+  const [modalEnvio, setModalEnvio] = useState(false);
+  const [envio, setEnvio] = useState({
+    queEnvias: "ELECTRONICO",
+    seguro: "No",
+    peso: 1,
+    largo: 37,
+    ancho: 21,
+    alto: 5,
+    fechaRecoleccion: "",
+    preferencia: "PRECIO",
+    barrioDestinatario: "",
+    complementoDestinatario: "",
+    indicacionesDestinatario: "",
+  });
+
+  function setE(campo: string, valor: string | number) {
+    setEnvio((prev) => ({ ...prev, [campo]: valor }));
+  }
+
+  function sinTildes(s: string) {
+    return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  }
+
+  function generarCSVEnvioClick() {
+    const partes = r.cliente.nombre.trim().split(/\s+/);
+    const nombreDest = partes[0].slice(0, 14);
+    const apellidoDest = (partes.slice(1).join(" ") || "N/A").slice(0, 21);
+    const telDest = (r.cliente.whatsapp ?? r.cliente.telefono ?? "").replace(/\D/g, "").slice(0, 10);
+    const ciudadDest = sinTildes(r.cliente.ciudad ?? "").toUpperCase().slice(0, 30);
+    const dptoDest = sinTildes(r.cliente.departamento ?? "").toUpperCase().slice(0, 30);
+    const dirDest = (r.cliente.direccion ?? "").slice(0, 50);
+
+    const CABECERA = [
+      "Que envias*3 a 25 caracteres",
+      "Valor factura *En COP, sin signos, puntos o comas",
+      "Agregar seguro *Cobertura varia por paqueteria",
+      "Peso (kg) *Peso min. 1 kg. No decimales",
+      "Largo (cm) *No decimales",
+      "Ancho (cm) *No decimales",
+      "Alto (cm) *No decimales",
+      "Fecha de Recoleccion (opcional) *dd/mm/aaaa",
+      "Mi referencia de envio (opcional) *#, SKU * 3 a 20 caracteres",
+      "Nombre remitente *2 a 14 caracteres  ",
+      "Apellido remitente *2 a 21 caracteres ",
+      "Empresa remitente *2 a 28 caracteres o N/A ",
+      "Direccion remitente *2 a 50  caracteres ",
+      "Barrio remitente *2 a 30 caracteres ",
+      "Edificio/Apto/Interior remitente *2 a 20 caracteres ",
+      "Indicaciones/Referencias remitente *2 a 30 caracteres ",
+      "Ciudad remitente  *Sin tildes",
+      "Departamento remitente *Sin tildes",
+      "Telefono remitente *10 caracteres",
+      "Email remitente *Un correo valido",
+      "Nombre destinatario *2 a 14 caracteres ",
+      "Apellido destinatario *2 a 21 caracteres ",
+      "Empresa destinatario *2 a 28 caracteres o N/A ",
+      "Direccion destinatario *2 a 50  caracteres ",
+      "Barrio destionatario *2 a 30 caracteres ",
+      "Edificio/Apto/Interior destinatario *2 a 20 caracteres ",
+      "Indicaciones/Referencias destinatario *2 a 30 caracteres ",
+      "Ciudad destinataria *Sin tildes",
+      "Departamento destinatario *Sin tildes",
+      "Telefono destinatario *10 caracteres",
+      "Email destinatario *Un correo valido",
+      "Preferencia de envio *Tarifa mas baja PRECIO *envio mas rapido TIEMPO",
+    ];
+
+    const FILA = [
+      envio.queEnvias.slice(0, 25),
+      String(Math.round(r.total)),
+      envio.seguro,
+      String(envio.peso),
+      String(envio.largo),
+      String(envio.ancho),
+      String(envio.alto),
+      envio.fechaRecoleccion,
+      r.documento.slice(0, 20),
+      "Yesica",
+      "Zuluaga Ospina",
+      "Echo Tecnologia",
+      "Carrera 55 #12Sur 09 Torre 3",
+      "Santa Barbara",
+      "Torre 3 Apto 9920",
+      "Barrio Santa Barbara",
+      "MEDELLIN",
+      "ANTIOQUIA",
+      "3207548718",
+      "echotecnologia@echotecnologia.co",
+      nombreDest,
+      apellidoDest,
+      "N/A",
+      dirDest,
+      envio.barrioDestinatario.slice(0, 30),
+      envio.complementoDestinatario.slice(0, 20),
+      envio.indicacionesDestinatario.slice(0, 30),
+      ciudadDest,
+      dptoDest,
+      telDest,
+      r.cliente.email ?? "",
+      envio.preferencia,
+    ];
+
+    const csvTxt = [CABECERA, FILA]
+      .map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+
+    const blob = new Blob([csvTxt], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `envioclick_${r.documento}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setModalEnvio(false);
+  }
+
   function abrirWhatsApp() {
     const rawTel = r.cliente.whatsapp ?? r.cliente.telefono ?? "";
     const solo = rawTel.replace(/\D/g, "");
@@ -1090,11 +1206,101 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
             >
               WhatsApp
             </button>
+            <button className="btn-secundario" style={{ width: "auto" }} onClick={() => setModalEnvio(true)}>
+              EnvioClick CSV
+            </button>
             <button className="btn-primario" style={{ width: "auto" }} onClick={imprimir}>
               Imprimir / Guardar PDF
             </button>
           </div>
         </div>
+
+        {/* Modal EnvioClick */}
+        {modalEnvio && (
+          <div className="modal-fondo" onClick={() => setModalEnvio(false)}>
+            <div className="modal" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
+              <h3 style={{ marginBottom: 16 }}>Generar CSV para EnvioClick</h3>
+              <p className="muted" style={{ marginBottom: 12 }}>
+                Destino: <strong>{r.cliente.nombre}</strong> — {r.cliente.ciudad ?? "sin ciudad"} · Valor: {pesos(r.total)}
+              </p>
+
+              <div className="grid-2">
+                <div className="campo">
+                  <label>Qué envías</label>
+                  <select value={envio.queEnvias} onChange={(e) => setE("queEnvias", e.target.value)}>
+                    {["ELECTRONICO","ACCESORIOS","ROPA","COSMETICOS","DOCUMENTO","CALZADO","JUGUETE","OTRO"].map((o) => (
+                      <option key={o}>{o}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="campo">
+                  <label>Preferencia</label>
+                  <select value={envio.preferencia} onChange={(e) => setE("preferencia", e.target.value)}>
+                    <option value="PRECIO">Más económico (PRECIO)</option>
+                    <option value="TIEMPO">Más rápido (TIEMPO)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid-2">
+                <div className="campo">
+                  <label>Seguro</label>
+                  <select value={envio.seguro} onChange={(e) => setE("seguro", e.target.value)}>
+                    <option>No</option>
+                    <option>Si</option>
+                  </select>
+                </div>
+                <div className="campo">
+                  <label>Peso (kg, mín. 1)</label>
+                  <input type="number" min={1} step={1} value={envio.peso} onChange={(e) => setE("peso", Number(e.target.value))} />
+                </div>
+              </div>
+
+              <div className="grid-3">
+                <div className="campo">
+                  <label>Largo (cm)</label>
+                  <input type="number" min={1} step={1} value={envio.largo} onChange={(e) => setE("largo", Number(e.target.value))} />
+                </div>
+                <div className="campo">
+                  <label>Ancho (cm)</label>
+                  <input type="number" min={1} step={1} value={envio.ancho} onChange={(e) => setE("ancho", Number(e.target.value))} />
+                </div>
+                <div className="campo">
+                  <label>Alto (cm)</label>
+                  <input type="number" min={1} step={1} value={envio.alto} onChange={(e) => setE("alto", Number(e.target.value))} />
+                </div>
+              </div>
+
+              <div className="grid-2">
+                <div className="campo">
+                  <label>Barrio destinatario</label>
+                  <input value={envio.barrioDestinatario} onChange={(e) => setE("barrioDestinatario", e.target.value)} placeholder="Ej. El Poblado" />
+                </div>
+                <div className="campo">
+                  <label>Apto / Interior (opcional)</label>
+                  <input value={envio.complementoDestinatario} onChange={(e) => setE("complementoDestinatario", e.target.value)} placeholder="Ej. Apto 302" />
+                </div>
+              </div>
+
+              <div className="campo">
+                <label>Indicaciones destinatario (opcional)</label>
+                <input value={envio.indicacionesDestinatario} onChange={(e) => setE("indicacionesDestinatario", e.target.value)} placeholder="Ej. Casa esquinera / Llamar antes" />
+              </div>
+
+              <div className="campo">
+                <label>Fecha recolección (opcional, dd/mm/aaaa)</label>
+                <input value={envio.fechaRecoleccion} onChange={(e) => setE("fechaRecoleccion", e.target.value)} placeholder="03/01/2026" />
+              </div>
+
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
+                <button className="btn-secundario" onClick={() => setModalEnvio(false)}>Cancelar</button>
+                <button className="btn-primario" style={{ width: "auto" }} onClick={generarCSVEnvioClick}>
+                  Descargar CSV
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Modal envío de correo */}
         {modalEmail && (
