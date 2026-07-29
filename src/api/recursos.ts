@@ -263,8 +263,37 @@ export interface FilaImportCompra {
   descuento?: number;
 }
 
+export interface CompraDetalle {
+  id: string;
+  codigo: string;
+  descripcion: string;
+  cantidad: number;
+  costoUnitario: number;
+  descuento: number;
+  subtotal: number;
+}
+
+export interface CompraCompleta {
+  id: string;
+  documento: string;
+  fecha: string;
+  sede: string;
+  sedeDireccion: string | null;
+  proveedor: string;
+  proveedorDocumento: string;
+  proveedorDireccion: string | null;
+  remisionProveedor: string | null;
+  observacion: string | null;
+  subtotal: number;
+  descuento: number;
+  total: number;
+  elaboradoPor: string | null;
+  detalles: CompraDetalle[];
+}
+
 export const comprasApi = {
   listar: () => api<Compra[]>("/compras"),
+  obtener: (id: string) => api<CompraCompleta>(`/compras/${id}`),
   crear: (datos: NuevaCompra) =>
     api<{ id: string }>("/compras", { method: "POST", body: JSON.stringify(datos) }),
   importar: (filas: FilaImportCompra[]) =>

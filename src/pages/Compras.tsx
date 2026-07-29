@@ -3,7 +3,7 @@
 // Lista las remisiones, permite crear una nueva (que actualiza inventario y
 // costos) e importar masivamente desde un archivo Excel.
 // ==========================================================================
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import * as XLSX from "xlsx";
 import {
   comprasApi,
@@ -11,6 +11,7 @@ import {
   articulosApi,
   proveedoresApi,
   type Compra,
+  type CompraCompleta,
   type Sede,
   type Articulo,
   type Proveedor,
@@ -40,6 +41,7 @@ export function Compras() {
   const [modal, setModal] = useState(false);
   const [preImport, setPreImport] = useState<DatosPreImport | null>(null);
   const [editar, setEditar] = useState<Compra | null>(null);
+  const [verPdf, setVerPdf] = useState<CompraCompleta | null>(null);
 
   async function cargar() {
     setCargando(true);
@@ -56,6 +58,14 @@ export function Compras() {
   useEffect(() => {
     cargar();
   }, []);
+
+  async function abrirPdf(id: string) {
+    try {
+      setVerPdf(await comprasApi.obtener(id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al cargar el detalle.");
+    }
+  }
 
   // --- Eliminar una compra (revierte el stock) ---
   async function eliminar(c: Compra) {
@@ -197,6 +207,9 @@ export function Compras() {
                   <td><span className="badge-sede">Pago total</span></td>
                   <td>
                     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      <button className="btn-secundario" style={{ padding: "6px 10px" }} onClick={() => abrirPdf(c.id)}>
+                        Ver / PDF
+                      </button>
                       <button className="btn-secundario" style={{ padding: "6px 10px" }} onClick={() => setEditar(c)}>
                         Editar
                       </button>
@@ -238,6 +251,8 @@ export function Compras() {
           onGuardado={() => { setEditar(null); cargar(); }}
         />
       )}
+
+      {verPdf && <CompraImprimible compra={verPdf} onCerrar={() => setVerPdf(null)} />}
     </div>
   );
 }
@@ -575,6 +590,166 @@ function ModalCrearCompra({
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+// --------------------------------------------------------------------------
+// Vista imprimible de la nota de remisión de compra.
+// --------------------------------------------------------------------------
+const EMISOR = {
+  nombre: "ECHO TECNOLOGÍA",
+  representante: "YESICA ZULUAGA OSPINA",
+  nit: "1017175943",
+  regimen: "Régimen ordinario No responsable de IVA",
+  direccion: "Antioquia / Medellín / Carrera 55 #12Sur 09 Torre 3 Apto 9920",
+  telefonos: "3207548718",
+  email: "echotecnologia@echotecnologia.co",
+  web: "echotecnologia.co",
+};
+
+function CompraImprimible({ compra: c, onCerrar }: { compra: CompraCompleta; onCerrar: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const fecha = new Date(c.fecha).toLocaleString("es-CO");
+  const cop = (v: number) => "$" + Math.round(v).toLocaleString("en-US");
+
+  function imprimir() {
+    const prev = document.title;
+    document.title = `Compra ${c.documento}`;
+    window.addEventListener("afterprint", () => { document.title = prev; }, { once: true });
+    window.print();
+  }
+
+  return (
+    <div className="modal-fondo">
+      <div className="modal" style={{ maxWidth: 900, maxHeight: "92vh", overflow: "auto" }} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-acciones no-print" style={{ justifyContent: "space-between", marginTop: 0, marginBottom: 12 }}>
+          <h2 style={{ margin: 0 }}>Compra {c.documento}</h2>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button className="btn-secundario" onClick={onCerrar}>Cerrar</button>
+            <button className="btn-primario" style={{ width: "auto" }} onClick={imprimir}>
+              Imprimir / Guardar PDF
+            </button>
+          </div>
+        </div>
+
+        <div className="remision-print" ref={ref} style={{ fontFamily: "Arial, sans-serif", fontSize: 13, color: "#000" }}>
+          {/* Encabezado */}
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 10 }}>
+            <tbody>
+              <tr>
+                <td style={{ width: "20%", verticalAlign: "middle" }}>
+                  <img src="/logo-echo.png" alt="Echo" style={{ maxWidth: 90, maxHeight: 70 }} onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                </td>
+                <td style={{ textAlign: "center", verticalAlign: "middle" }}>
+                  <div style={{ fontWeight: "bold", fontSize: 16 }}>{EMISOR.nombre}</div>
+                  <div style={{ fontWeight: "bold" }}>{EMISOR.representante}</div>
+                  <div><strong>NIT:</strong> {EMISOR.nit} | {EMISOR.regimen}</div>
+                  <div>{EMISOR.direccion}</div>
+                  <div><strong>Teléfonos:</strong> {EMISOR.telefonos}</div>
+                  <div><strong>Email:</strong> {EMISOR.email} &nbsp; <strong>Página web:</strong> {EMISOR.web}</div>
+                </td>
+                <td style={{ width: "22%", textAlign: "right", verticalAlign: "top" }}>
+                  <div style={{ fontWeight: "bold", fontSize: 14 }}>NOTA DE REMISIÓN DE<br />COMPRA</div>
+                  <div style={{ marginTop: 6 }}><strong>No.</strong> {c.documento}</div>
+                  <div>{fecha}</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* Datos de la compra */}
+          <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #000", marginBottom: 8, fontSize: 12 }}>
+            <tbody>
+              <tr>
+                <td style={{ border: "1px solid #000", padding: "4px 8px", width: "50%" }}>
+                  <strong>Proveedor:</strong> {c.proveedor} &nbsp; NE. {c.proveedorDocumento}
+                </td>
+                <td style={{ border: "1px solid #000", padding: "4px 8px" }}>
+                  <strong>Remisión del proveedor:</strong> {c.remisionProveedor ?? "—"}
+                </td>
+              </tr>
+              <tr>
+                <td colSpan={2} style={{ border: "1px solid #000", padding: "4px 8px" }}>
+                  <strong>Dirección:</strong> {c.proveedorDireccion ?? "—"}
+                </td>
+              </tr>
+              <tr>
+                <td style={{ border: "1px solid #000", padding: "4px 8px" }}>
+                  <strong>Sucursal:</strong> {c.sede}
+                </td>
+                <td style={{ border: "1px solid #000", padding: "4px 8px" }}>
+                  <strong>Bodega:</strong> {c.sede}
+                </td>
+              </tr>
+              {c.elaboradoPor && (
+                <tr>
+                  <td colSpan={2} style={{ border: "1px solid #000", padding: "4px 8px" }}>
+                    <strong>Elaboró:</strong> {c.elaboradoPor}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+
+          {/* Tabla de artículos */}
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, marginBottom: 8 }}>
+            <thead>
+              <tr style={{ background: "#f0f0f0" }}>
+                <th style={{ border: "1px solid #000", padding: "4px 6px", textAlign: "left" }}>REF.</th>
+                <th style={{ border: "1px solid #000", padding: "4px 6px", textAlign: "left" }}>DESCRIPCIÓN</th>
+                <th style={{ border: "1px solid #000", padding: "4px 6px", textAlign: "center" }}>CANTIDAD</th>
+                <th style={{ border: "1px solid #000", padding: "4px 6px", textAlign: "right" }}>PRECIO UD.</th>
+                <th style={{ border: "1px solid #000", padding: "4px 6px", textAlign: "right" }}>BRUTO</th>
+                <th style={{ border: "1px solid #000", padding: "4px 6px", textAlign: "right" }}>IMPUESTOS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {c.detalles.map((d) => (
+                <tr key={d.id}>
+                  <td style={{ border: "1px solid #000", padding: "4px 6px" }}>{d.codigo}</td>
+                  <td style={{ border: "1px solid #000", padding: "4px 6px" }}>{d.descripcion}</td>
+                  <td style={{ border: "1px solid #000", padding: "4px 6px", textAlign: "center" }}>{d.cantidad}</td>
+                  <td style={{ border: "1px solid #000", padding: "4px 6px", textAlign: "right" }}>{cop(d.costoUnitario)}</td>
+                  <td style={{ border: "1px solid #000", padding: "4px 6px", textAlign: "right" }}>{cop(d.cantidad * d.costoUnitario)}</td>
+                  <td style={{ border: "1px solid #000", padding: "4px 6px", textAlign: "right" }}>—</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Pie */}
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <tbody>
+              <tr>
+                <td style={{ border: "1px solid #000", padding: "6px 8px", verticalAlign: "top", width: "35%" }}>
+                  <strong>FORMAS DE PAGO:</strong><br />
+                  Contado - Valor: {cop(c.total)}<br />
+                  <br /><strong>MEDIOS DE PAGO:</strong><br />
+                  Efectivo - Valor: {cop(c.total)}
+                </td>
+                <td style={{ border: "1px solid #000", padding: "6px 8px", verticalAlign: "top" }}>
+                  <strong>DETALLE DE IMPUESTOS Y RETENCIONES:</strong><br />
+                  {c.observacion ? c.observacion : "-No registra-"}
+                </td>
+                <td style={{ border: "1px solid #000", padding: "6px 8px", textAlign: "right", verticalAlign: "top", width: "22%" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span>SUBTOTAL</span><span>{cop(c.subtotal)}</span>
+                  </div>
+                  {c.descuento > 0 && (
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span>DESCUENTO</span><span>-{cop(c.descuento)}</span>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", borderTop: "1px solid #000", paddingTop: 4 }}>
+                    <span>TOTAL NETO</span><span>{cop(c.total)}</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
