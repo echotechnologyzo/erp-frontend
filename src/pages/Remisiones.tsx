@@ -1152,15 +1152,6 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
     setModalEnvio(false);
   }
 
-  function abrirWhatsApp() {
-    const rawTel = r.cliente.whatsapp ?? r.cliente.telefono ?? "";
-    const solo = rawTel.replace(/\D/g, "");
-    const numero = solo.startsWith("57") ? solo : `57${solo}`;
-    const msg = encodeURIComponent(
-      `Hola ${r.cliente.nombre} buen día, esperamos te encuentres muy bien, adjuntamos factura de tu producto, quedamos muy atentos a cualquier inquietud🤗.\n\nGracias por tu compra. Te invitamos a que nos sigas en nuestras redes sociales. https://instagram.com/echo_tecnologiaencasa?igshid=ODBkMDk1MTU=\n\nConoce nuestro catálogo 😆`
-    );
-    window.open(`https://web.whatsapp.com/send?phone=${numero}&text=${msg}`, "_blank");
-  }
 
   function imprimir() {
     const tituloPrevio = document.title;
@@ -1197,15 +1188,7 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
             <button className="btn-secundario" style={{ width: "auto" }} onClick={() => { setEmailDestino(r.cliente.email ?? ""); setAvisoEmail(null); setModalEmail(true); }}>
               Enviar por correo
             </button>
-            <button
-              className="btn-secundario"
-              style={{ width: "auto", background: "#25D366", color: "#fff", borderColor: "#25D366" }}
-              onClick={abrirWhatsApp}
-              disabled={!(r.cliente.whatsapp ?? r.cliente.telefono)}
-              title={!(r.cliente.whatsapp ?? r.cliente.telefono) ? "El cliente no tiene teléfono registrado" : ""}
-            >
-              WhatsApp
-            </button>
+
             <button className="btn-secundario" style={{ width: "auto" }} onClick={() => setModalEnvio(true)}>
               EnvioClick CSV
             </button>
