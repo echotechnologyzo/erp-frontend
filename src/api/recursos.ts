@@ -30,7 +30,7 @@ export interface Articulo {
 }
 
 export interface NuevoArticulo {
-  codigo: string;
+  codigo?: string;
   nombre: string;
   descripcion?: string;
   tipo?: string;

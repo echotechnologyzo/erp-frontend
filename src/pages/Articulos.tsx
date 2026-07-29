@@ -559,10 +559,12 @@ function ModalArticulo({
               <label>Nombre *</label>
               <input value={form.nombre} onChange={(e) => set("nombre", e.target.value)} required />
             </div>
-            <div className="campo">
-              <label>Código de referencia *</label>
-              <input value={form.codigo} onChange={(e) => set("codigo", e.target.value)} required />
-            </div>
+            {esEdicion && (
+              <div className="campo">
+                <label>Código de referencia</label>
+                <input value={form.codigo ?? ""} onChange={(e) => set("codigo", e.target.value)} />
+              </div>
+            )}
           </div>
 
           <div className="grid-2">
