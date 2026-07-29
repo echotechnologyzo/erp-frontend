@@ -1059,13 +1059,18 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
     return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
   }
 
+  // Limpia un valor para el CSV de EnvioClick: sin tildes, sin comas, en mayúsculas, truncado.
+  function limpiarCampo(s: string | null, max: number) {
+    return sinTildes(s ?? "").replace(/,/g, "").toUpperCase().trim().slice(0, max);
+  }
+
   function generarCSVEnvioClick() {
     const partes = r.cliente.nombre.trim().split(/\s+/);
     const nombreDest = partes[0].slice(0, 14);
     const apellidoDest = (partes.slice(1).join(" ") || "N/A").slice(0, 21);
     const telDest = (r.cliente.whatsapp ?? r.cliente.telefono ?? "").replace(/\D/g, "").slice(0, 10);
-    const ciudadDest = sinTildes(r.cliente.ciudad ?? "").toUpperCase().slice(0, 30);
-    const dptoDest = sinTildes(r.cliente.departamento ?? "").toUpperCase().slice(0, 30);
+    const ciudadDest = limpiarCampo(r.cliente.ciudad, 30);
+    const dptoDest = limpiarCampo(r.cliente.departamento, 30);
     const dirDest = (r.cliente.direccion ?? "").slice(0, 50);
 
     const CABECERA = [
