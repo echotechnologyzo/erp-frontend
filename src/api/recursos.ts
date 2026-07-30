@@ -499,6 +499,7 @@ export interface RemisionCompleta {
   comisionPct: number;
   comisionValor: number;
   detalles: RemisionDetalleLinea[];
+  envio?: Envio | null;
 }
 
 export interface NuevaRemisionItem {
@@ -748,6 +749,65 @@ export const reportesApi = {
     return api<ProductoTop[]>(`/reportes/top-productos${s ? `?${s}` : ""}`);
   },
   valorMercancia: () => api<ValorMercancia>("/reportes/valor-mercancia"),
+};
+
+// --- Skydropx ---
+export interface TarifaSkydropx {
+  id: string;
+  carrier: string;
+  service_level_name: string;
+  total_price: string;
+  currency: string;
+  estimated_days: number | null;
+}
+
+export interface CotizacionSkydropx {
+  id: string;
+  is_completed: boolean;
+  cash_on_delivery: boolean;
+  rates: TarifaSkydropx[];
+}
+
+export interface EnvioRemisionResumen {
+  id: string;
+  documento: string;
+  fecha: string;
+  total: number;
+  cliente: { nombre: string; ciudad: string | null; telefono: string | null; whatsapp: string | null };
+  sede: { nombre: string };
+}
+
+export interface Envio {
+  id: string;
+  remisionId: string;
+  skydropxId: string;
+  tracking: string;
+  carrier: string;
+  estado: string;
+  guiaUrl: string | null;
+  precio: number | null;
+  contraentrega: boolean;
+  montoContraentrega: number | null;
+  estadoCobro: string | null;
+  ultimaActualizacion: string;
+  creadoEn: string;
+  remision?: EnvioRemisionResumen;
+}
+
+export const skydropxApi = {
+  cotizar: (remisionId: string) =>
+    api<CotizacionSkydropx>(`/skydropx/remisiones/${remisionId}/cotizar`, { method: "POST" }),
+  crearGuia: (remisionId: string, rateId: string) =>
+    api<Envio>(`/skydropx/remisiones/${remisionId}/guia`, {
+      method: "POST",
+      body: JSON.stringify({ rateId }),
+    }),
+  seguimientos: () => api<Envio[]>("/skydropx/seguimientos"),
+  rastrear: (envioId: string) => api<Envio>(`/skydropx/envios/${envioId}/rastrear`),
+  actualizarEstados: () =>
+    api<{ id: string; estado: string }[]>("/skydropx/actualizar-estados", { method: "POST" }),
+  cancelar: (envioId: string) =>
+    api<{ ok: boolean }>(`/skydropx/envios/${envioId}/cancelar`, { method: "POST" }),
 };
 
 // --- Auth público (recuperación de contraseña) ---

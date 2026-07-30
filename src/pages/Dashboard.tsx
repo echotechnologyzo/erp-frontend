@@ -15,6 +15,7 @@ const Clientes    = lazy(() => import("./Clientes").then((m) => ({ default: m.Cl
 const Proveedores = lazy(() => import("./Proveedores").then((m) => ({ default: m.Proveedores })));
 const Empleados   = lazy(() => import("./Empleados").then((m) => ({ default: m.Empleados })));
 const Remisiones  = lazy(() => import("./Remisiones").then((m) => ({ default: m.Remisiones })));
+const Seguimientos = lazy(() => import("./Seguimientos").then((m) => ({ default: m.Seguimientos })));
 const Comisiones  = lazy(() => import("./Comisiones").then((m) => ({ default: m.Comisiones })));
 const Reportes    = lazy(() => import("./Reportes").then((m) => ({ default: m.Reportes })));
 const Usuarios    = lazy(() => import("./Usuarios").then((m) => ({ default: m.Usuarios })));
@@ -28,6 +29,7 @@ type Vista =
   | "clientes"
   | "empleados"
   | "remisiones"
+  | "seguimientos"
   | "usuarios"
   | "comisiones"
   | "reportes";
@@ -114,6 +116,7 @@ export function Dashboard() {
           <Link id="clientes">Clientes</Link>
           {esAdmin && <Link id="empleados">Empleados</Link>}
           <Link id="remisiones">Remisiones</Link>
+          <Link id="seguimientos">Seguimientos</Link>
           {esAdmin && <Link id="usuarios">Usuarios</Link>}
           {esAdmin && <Link id="comisiones">Comisiones</Link>}
           {esAdmin && <Link id="reportes">Reportes</Link>}
@@ -142,6 +145,7 @@ export function Dashboard() {
           {vista === "clientes"    && <Clientes />}
           {vista === "empleados"   && esAdmin && <Empleados />}
           {vista === "remisiones"  && <Remisiones />}
+          {vista === "seguimientos" && <Seguimientos />}
           {vista === "comisiones"  && esAdmin && <Comisiones />}
           {vista === "reportes"    && esAdmin && <Reportes />}
           {vista === "usuarios"    && esAdmin && <Usuarios />}

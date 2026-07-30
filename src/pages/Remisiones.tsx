@@ -24,6 +24,10 @@ import {
   type Empleado,
   type NuevaRemisionItem,
   type FilaImportRemision,
+  type TarifaSkydropx,
+  type CotizacionSkydropx,
+  type Envio,
+  skydropxApi,
 } from "../api/recursos";
 import { ModalCliente } from "./Clientes";
 import { SelectorArticulo } from "../components/SelectorArticulo";
@@ -1036,141 +1040,46 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
   const [emailDestino, setEmailDestino] = useState(r.cliente.email ?? "");
   const [avisoEmail, setAvisoEmail] = useState<string | null>(null);
 
-  const [modalEnvio, setModalEnvio] = useState(false);
-  const [envio, setEnvio] = useState({
-    queEnvias: "ELECTRONICO",
-    seguro: "No",
-    peso: 1,
-    largo: 37,
-    ancho: 21,
-    alto: 5,
-    fechaRecoleccion: "",
-    preferencia: "PRECIO",
-    barrioDestinatario: "",
-    complementoDestinatario: "",
-    indicacionesDestinatario: "",
-  });
+  // --- Guía Skydropx ---
+  const [modalGuia, setModalGuia] = useState(false);
+  const [cotizando, setCotizando] = useState(false);
+  const [cotizacion, setCotizacion] = useState<CotizacionSkydropx | null>(null);
+  const [tarifaSeleccionada, setTarifaSeleccionada] = useState<TarifaSkydropx | null>(null);
+  const [creandoGuia, setCreandoGuia] = useState(false);
+  const [envioGenerado, setEnvioGenerado] = useState<Envio | null>(r.envio ?? null);
+  const [errorGuia, setErrorGuia] = useState<string | null>(null);
 
-  function setE(campo: string, valor: string | number) {
-    setEnvio((prev) => ({ ...prev, [campo]: valor }));
+  async function abrirModalGuia() {
+    setModalGuia(true);
+    setErrorGuia(null);
+    setCotizacion(null);
+    setTarifaSeleccionada(null);
+    if (envioGenerado) return; // ya tiene guía
+    setCotizando(true);
+    try {
+      const c = await skydropxApi.cotizar(r.id);
+      setCotizacion(c);
+    } catch (e) {
+      setErrorGuia(e instanceof Error ? e.message : "Error al cotizar.");
+    } finally {
+      setCotizando(false);
+    }
   }
 
-  function sinTildes(s: string) {
-    return s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+  async function confirmarGuia() {
+    if (!tarifaSeleccionada) return;
+    setCreandoGuia(true);
+    setErrorGuia(null);
+    try {
+      const envio = await skydropxApi.crearGuia(r.id, tarifaSeleccionada.id);
+      setEnvioGenerado(envio);
+      setCotizacion(null);
+    } catch (e) {
+      setErrorGuia(e instanceof Error ? e.message : "Error al crear la guía.");
+    } finally {
+      setCreandoGuia(false);
+    }
   }
-
-  // Limpia un valor para el CSV de EnvioClick: sin tildes, sin comas, en mayúsculas, truncado.
-  function limpiarCampo(s: string | null, max: number) {
-    return sinTildes(s ?? "").replace(/,/g, "").replace(/\./g, "").toUpperCase().trim().slice(0, max);
-  }
-
-  // Ciudad → departamento oficial según EnvioClick (ciudades especiales o D.C.).
-  const CIUDAD_A_DPTO: Record<string, string> = {
-    "BOGOTA": "CUNDINAMARCA", "BOGOTA DC": "CUNDINAMARCA",
-    "MEDELLIN": "ANTIOQUIA", "CALI": "VALLE DEL CAUCA",
-    "BARRANQUILLA": "ATLANTICO", "CARTAGENA": "BOLIVAR",
-    "CUCUTA": "NORTE DE SANTANDER", "BUCARAMANGA": "SANTANDER",
-    "PEREIRA": "RISARALDA", "MANIZALES": "CALDAS",
-    "SANTA MARTA": "MAGDALENA", "IBAGUE": "TOLIMA",
-    "PASTO": "NARINO", "VILLAVICENCIO": "META",
-    "MONTERIA": "CORDOBA", "SINCELEJO": "SUCRE",
-    "VALLEDUPAR": "CESAR", "NEIVA": "HUILA",
-    "ARMENIA": "QUINDIO", "POPAYAN": "CAUCA",
-  };
-
-  function generarCSVEnvioClick() {
-    const partes = r.cliente.nombre.trim().split(/\s+/);
-    const nombreDest = partes[0].slice(0, 14);
-    const apellidoDest = (partes.slice(1).join(" ") || "N/A").slice(0, 21);
-    const telDest = (r.cliente.whatsapp ?? r.cliente.telefono ?? "").replace(/\D/g, "").slice(0, 10);
-    const ciudadDest = limpiarCampo(r.cliente.ciudad, 30);
-    const dptoDest = CIUDAD_A_DPTO[ciudadDest] ?? limpiarCampo(r.cliente.departamento, 30);
-    const dirDest = (r.cliente.direccion ?? "").slice(0, 50);
-
-    const CABECERA = [
-      "Que envias*3 a 25 caracteres",
-      "Valor factura *En COP, sin signos, puntos o comas",
-      "Agregar seguro *Cobertura varia por paqueteria",
-      "Peso (kg) *Peso min. 1 kg. No decimales",
-      "Largo (cm) *No decimales",
-      "Ancho (cm) *No decimales",
-      "Alto (cm) *No decimales",
-      "Fecha de Recoleccion (opcional) *dd/mm/aaaa",
-      "Mi referencia de envio (opcional) *#, SKU * 3 a 20 caracteres",
-      "Nombre remitente *2 a 14 caracteres  ",
-      "Apellido remitente *2 a 21 caracteres ",
-      "Empresa remitente *2 a 28 caracteres o N/A ",
-      "Direccion remitente *2 a 50  caracteres ",
-      "Barrio remitente *2 a 30 caracteres ",
-      "Edificio/Apto/Interior remitente *2 a 20 caracteres ",
-      "Indicaciones/Referencias remitente *2 a 30 caracteres ",
-      "Ciudad remitente  *Sin tildes",
-      "Departamento remitente *Sin tildes",
-      "Telefono remitente *10 caracteres",
-      "Email remitente *Un correo valido",
-      "Nombre destinatario *2 a 14 caracteres ",
-      "Apellido destinatario *2 a 21 caracteres ",
-      "Empresa destinatario *2 a 28 caracteres o N/A ",
-      "Direccion destinatario *2 a 50  caracteres ",
-      "Barrio destionatario *2 a 30 caracteres ",
-      "Edificio/Apto/Interior destinatario *2 a 20 caracteres ",
-      "Indicaciones/Referencias destinatario *2 a 30 caracteres ",
-      "Ciudad destinataria *Sin tildes",
-      "Departamento destinatario *Sin tildes",
-      "Telefono destinatario *10 caracteres",
-      "Email destinatario *Un correo valido",
-      "Preferencia de envio *Tarifa mas baja PRECIO *envio mas rapido TIEMPO",
-    ];
-
-    const FILA = [
-      envio.queEnvias.slice(0, 25),
-      String(Math.round(r.total)),
-      envio.seguro,
-      String(envio.peso),
-      String(envio.largo),
-      String(envio.ancho),
-      String(envio.alto),
-      envio.fechaRecoleccion,
-      r.documento.slice(0, 20),
-      "Yesica",
-      "Zuluaga Ospina",
-      "Echo Tecnologia",
-      "Carrera 55 #12Sur 09 Torre 3",
-      "Santa Barbara",
-      "Torre 3 Apto 9920",
-      "Barrio Santa Barbara",
-      "MEDELLIN",
-      "ANTIOQUIA",
-      "3207548718",
-      "echotecnologia@echotecnologia.co",
-      nombreDest,
-      apellidoDest,
-      "N/A",
-      dirDest,
-      envio.barrioDestinatario.slice(0, 30),
-      envio.complementoDestinatario.slice(0, 20),
-      envio.indicacionesDestinatario.slice(0, 30),
-      ciudadDest,
-      dptoDest,
-      telDest,
-      r.cliente.email ?? "",
-      envio.preferencia,
-    ];
-
-    const csvTxt = [CABECERA, FILA]
-      .map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-
-    const blob = new Blob([csvTxt], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `envioclick_${r.documento}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setModalEnvio(false);
-  }
-
 
   function imprimir() {
     const tituloPrevio = document.title;
@@ -1208,97 +1117,84 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
               Enviar por correo
             </button>
 
-            <button className="btn-secundario" style={{ width: "auto" }} onClick={() => setModalEnvio(true)}>
-              EnvioClick CSV
+            <button
+              className={envioGenerado ? "btn-secundario" : "btn-secundario"}
+              style={{ width: "auto", borderColor: envioGenerado ? "var(--verde, #22c55e)" : undefined, color: envioGenerado ? "var(--verde, #22c55e)" : undefined }}
+              onClick={abrirModalGuia}
+            >
+              {envioGenerado ? `Guía: ${envioGenerado.tracking}` : "Generar guía Skydropx"}
             </button>
+
             <button className="btn-primario" style={{ width: "auto" }} onClick={imprimir}>
               Imprimir / Guardar PDF
             </button>
           </div>
         </div>
 
-        {/* Modal EnvioClick */}
-        {modalEnvio && (
-          <div className="modal-fondo" onClick={() => setModalEnvio(false)}>
-            <div className="modal" style={{ maxWidth: 520 }} onClick={(e) => e.stopPropagation()}>
-              <h3 style={{ marginBottom: 16 }}>Generar CSV para EnvioClick</h3>
+        {/* Modal Skydropx */}
+        {modalGuia && (
+          <div className="modal-fondo" onClick={() => setModalGuia(false)}>
+            <div className="modal" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+              <h3 style={{ marginBottom: 12 }}>Guía de envío — {r.documento}</h3>
               <p className="muted" style={{ marginBottom: 12 }}>
-                Destino: <strong>{r.cliente.nombre}</strong> — {r.cliente.ciudad ?? "sin ciudad"} · Valor: {pesos(r.total)}
+                Destino: <strong>{r.cliente.nombre}</strong> · {r.cliente.ciudad} · Contraentrega: {pesos(Number(r.total))}
               </p>
 
-              <div className="grid-2">
-                <div className="campo">
-                  <label>Qué envías</label>
-                  <select value={envio.queEnvias} onChange={(e) => setE("queEnvias", e.target.value)}>
-                    {["ELECTRONICO","ACCESORIOS","ROPA","COSMETICOS","DOCUMENTO","CALZADO","JUGUETE","OTRO"].map((o) => (
-                      <option key={o}>{o}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="campo">
-                  <label>Preferencia</label>
-                  <select value={envio.preferencia} onChange={(e) => setE("preferencia", e.target.value)}>
-                    <option value="PRECIO">Más económico (PRECIO)</option>
-                    <option value="TIEMPO">Más rápido (TIEMPO)</option>
-                  </select>
-                </div>
-              </div>
+              {errorGuia && <div className="alerta-error" style={{ marginBottom: 12 }}>{errorGuia}</div>}
 
-              <div className="grid-2">
-                <div className="campo">
-                  <label>Seguro</label>
-                  <select value={envio.seguro} onChange={(e) => setE("seguro", e.target.value)}>
-                    <option>No</option>
-                    <option>Si</option>
-                  </select>
+              {/* Guía ya generada */}
+              {envioGenerado && (
+                <div style={{ background: "var(--superficie2,#f4f4f4)", borderRadius: 8, padding: 16, marginBottom: 16 }}>
+                  <p><strong>Transportadora:</strong> {envioGenerado.carrier}</p>
+                  <p><strong>Tracking:</strong> {envioGenerado.tracking}</p>
+                  <p><strong>Estado:</strong> {envioGenerado.estado.replace(/_/g, " ")}</p>
+                  {envioGenerado.precio && <p><strong>Precio envío:</strong> {pesos(envioGenerado.precio)}</p>}
+                  {envioGenerado.guiaUrl && (
+                    <a href={envioGenerado.guiaUrl} target="_blank" rel="noreferrer" className="btn-primario" style={{ display: "inline-block", marginTop: 8, width: "auto", textDecoration: "none" }}>
+                      Descargar guía PDF
+                    </a>
+                  )}
                 </div>
-                <div className="campo">
-                  <label>Peso (kg, mín. 1)</label>
-                  <input type="number" min={1} step={1} value={envio.peso} onChange={(e) => setE("peso", Number(e.target.value))} />
-                </div>
-              </div>
+              )}
 
-              <div className="grid-3">
-                <div className="campo">
-                  <label>Largo (cm)</label>
-                  <input type="number" min={1} step={1} value={envio.largo} onChange={(e) => setE("largo", Number(e.target.value))} />
-                </div>
-                <div className="campo">
-                  <label>Ancho (cm)</label>
-                  <input type="number" min={1} step={1} value={envio.ancho} onChange={(e) => setE("ancho", Number(e.target.value))} />
-                </div>
-                <div className="campo">
-                  <label>Alto (cm)</label>
-                  <input type="number" min={1} step={1} value={envio.alto} onChange={(e) => setE("alto", Number(e.target.value))} />
-                </div>
-              </div>
+              {/* Cotizando */}
+              {!envioGenerado && cotizando && <p className="muted">Cotizando con Skydropx…</p>}
 
-              <div className="grid-2">
-                <div className="campo">
-                  <label>Barrio destinatario</label>
-                  <input value={envio.barrioDestinatario} onChange={(e) => setE("barrioDestinatario", e.target.value)} placeholder="Ej. El Poblado" />
+              {/* Tarifas disponibles */}
+              {!envioGenerado && cotizacion && cotizacion.rates?.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <p style={{ marginBottom: 8, fontWeight: 600 }}>Selecciona una tarifa:</p>
+                  {cotizacion.rates.map((t) => (
+                    <label
+                      key={t.id}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+                        border: `2px solid ${tarifaSeleccionada?.id === t.id ? "var(--primario)" : "var(--borde,#ddd)"}`,
+                        borderRadius: 8, marginBottom: 6, cursor: "pointer",
+                      }}
+                    >
+                      <input type="radio" name="tarifa" value={t.id} checked={tarifaSeleccionada?.id === t.id} onChange={() => setTarifaSeleccionada(t)} />
+                      <span style={{ flex: 1 }}>
+                        <strong>{t.carrier}</strong> — {t.service_level_name}
+                        {t.estimated_days ? ` · ${t.estimated_days} días` : ""}
+                      </span>
+                      <span style={{ fontWeight: 700 }}>{pesos(Number(t.total_price))}</span>
+                    </label>
+                  ))}
                 </div>
-                <div className="campo">
-                  <label>Apto / Interior (opcional)</label>
-                  <input value={envio.complementoDestinatario} onChange={(e) => setE("complementoDestinatario", e.target.value)} placeholder="Ej. Apto 302" />
-                </div>
-              </div>
+              )}
 
-              <div className="campo">
-                <label>Indicaciones destinatario (opcional)</label>
-                <input value={envio.indicacionesDestinatario} onChange={(e) => setE("indicacionesDestinatario", e.target.value)} placeholder="Ej. Casa esquinera / Llamar antes" />
-              </div>
+              {!envioGenerado && cotizacion && cotizacion.rates?.length === 0 && (
+                <p className="alerta-error">No hay tarifas disponibles para este destino.</p>
+              )}
 
-              <div className="campo">
-                <label>Fecha recolección (opcional, dd/mm/aaaa)</label>
-                <input value={envio.fechaRecoleccion} onChange={(e) => setE("fechaRecoleccion", e.target.value)} placeholder="03/01/2026" />
-              </div>
-
-              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
-                <button className="btn-secundario" onClick={() => setModalEnvio(false)}>Cancelar</button>
-                <button className="btn-primario" style={{ width: "auto" }} onClick={generarCSVEnvioClick}>
-                  Descargar CSV
-                </button>
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
+                <button className="btn-secundario" onClick={() => setModalGuia(false)}>Cerrar</button>
+                {!envioGenerado && tarifaSeleccionada && (
+                  <button className="btn-primario" style={{ width: "auto" }} onClick={confirmarGuia} disabled={creandoGuia}>
+                    {creandoGuia ? "Generando…" : "Confirmar y generar guía"}
+                  </button>
+                )}
               </div>
             </div>
           </div>
