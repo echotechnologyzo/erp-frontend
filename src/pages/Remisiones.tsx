@@ -24,10 +24,6 @@ import {
   type Empleado,
   type NuevaRemisionItem,
   type FilaImportRemision,
-  type TarifaSkydropx,
-  type CotizacionSkydropx,
-  type Envio,
-  skydropxApi,
 } from "../api/recursos";
 import { ModalCliente } from "./Clientes";
 import { SelectorArticulo } from "../components/SelectorArticulo";
@@ -1040,47 +1036,6 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
   const [emailDestino, setEmailDestino] = useState(r.cliente.email ?? "");
   const [avisoEmail, setAvisoEmail] = useState<string | null>(null);
 
-  // --- Guía Skydropx ---
-  const [modalGuia, setModalGuia] = useState(false);
-  const [cotizando, setCotizando] = useState(false);
-  const [cotizacion, setCotizacion] = useState<CotizacionSkydropx | null>(null);
-  const [tarifaSeleccionada, setTarifaSeleccionada] = useState<TarifaSkydropx | null>(null);
-  const [creandoGuia, setCreandoGuia] = useState(false);
-  const [envioGenerado, setEnvioGenerado] = useState<Envio | null>(r.envio ?? null);
-  const [errorGuia, setErrorGuia] = useState<string | null>(null);
-
-  async function abrirModalGuia() {
-    setModalGuia(true);
-    setErrorGuia(null);
-    setCotizacion(null);
-    setTarifaSeleccionada(null);
-    if (envioGenerado) return; // ya tiene guía
-    setCotizando(true);
-    try {
-      const c = await skydropxApi.cotizar(r.id);
-      setCotizacion(c);
-    } catch (e) {
-      setErrorGuia(e instanceof Error ? e.message : "Error al cotizar.");
-    } finally {
-      setCotizando(false);
-    }
-  }
-
-  async function confirmarGuia() {
-    if (!tarifaSeleccionada) return;
-    setCreandoGuia(true);
-    setErrorGuia(null);
-    try {
-      const envio = await skydropxApi.crearGuia(r.id, tarifaSeleccionada.id, cotizacion!.id);
-      setEnvioGenerado(envio);
-      setCotizacion(null);
-    } catch (e) {
-      setErrorGuia(e instanceof Error ? e.message : "Error al crear la guía.");
-    } finally {
-      setCreandoGuia(false);
-    }
-  }
-
   function imprimir() {
     const tituloPrevio = document.title;
     document.title = `Remisión ${r.documento}`;
@@ -1117,88 +1072,11 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
               Enviar por correo
             </button>
 
-            <button
-              className={envioGenerado ? "btn-secundario" : "btn-secundario"}
-              style={{ width: "auto", borderColor: envioGenerado ? "var(--verde, #22c55e)" : undefined, color: envioGenerado ? "var(--verde, #22c55e)" : undefined }}
-              onClick={abrirModalGuia}
-            >
-              {envioGenerado ? `Guía: ${envioGenerado.tracking}` : "Generar guía Skydropx"}
-            </button>
-
             <button className="btn-primario" style={{ width: "auto" }} onClick={imprimir}>
               Imprimir / Guardar PDF
             </button>
           </div>
         </div>
-
-        {/* Modal Skydropx */}
-        {modalGuia && (
-          <div className="modal-fondo" onClick={() => setModalGuia(false)}>
-            <div className="modal" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
-              <h3 style={{ marginBottom: 12 }}>Guía de envío — {r.documento}</h3>
-              <p className="muted" style={{ marginBottom: 12 }}>
-                Destino: <strong>{r.cliente.nombre}</strong> · {r.cliente.ciudad} · Contraentrega: {pesos(Number(r.total))}
-              </p>
-
-              {errorGuia && <div className="alerta-error" style={{ marginBottom: 12 }}>{errorGuia}</div>}
-
-              {/* Guía ya generada */}
-              {envioGenerado && (
-                <div style={{ background: "var(--superficie2,#f4f4f4)", borderRadius: 8, padding: 16, marginBottom: 16 }}>
-                  <p><strong>Transportadora:</strong> {envioGenerado.carrier}</p>
-                  <p><strong>Tracking:</strong> {envioGenerado.tracking}</p>
-                  <p><strong>Estado:</strong> {envioGenerado.estado.replace(/_/g, " ")}</p>
-                  {envioGenerado.precio && <p><strong>Precio envío:</strong> {pesos(envioGenerado.precio)}</p>}
-                  {envioGenerado.guiaUrl && (
-                    <a href={envioGenerado.guiaUrl} target="_blank" rel="noreferrer" className="btn-primario" style={{ display: "inline-block", marginTop: 8, width: "auto", textDecoration: "none" }}>
-                      Descargar guía PDF
-                    </a>
-                  )}
-                </div>
-              )}
-
-              {/* Cotizando */}
-              {!envioGenerado && cotizando && <p className="muted">Cotizando con Skydropx…</p>}
-
-              {/* Tarifas disponibles */}
-              {!envioGenerado && cotizacion && cotizacion.rates?.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
-                  <p style={{ marginBottom: 8, fontWeight: 600 }}>Selecciona una tarifa:</p>
-                  {cotizacion.rates.map((t) => (
-                    <label
-                      key={t.id}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
-                        border: `2px solid ${tarifaSeleccionada?.id === t.id ? "var(--primario)" : "var(--borde,#ddd)"}`,
-                        borderRadius: 8, marginBottom: 6, cursor: "pointer",
-                      }}
-                    >
-                      <input type="radio" name="tarifa" value={t.id} checked={tarifaSeleccionada?.id === t.id} onChange={() => setTarifaSeleccionada(t)} />
-                      <span style={{ flex: 1 }}>
-                        <strong>{t.carrier}</strong> — {t.service_level_name}
-                        {t.estimated_days ? ` · ${t.estimated_days} días` : ""}
-                      </span>
-                      <span style={{ fontWeight: 700 }}>{pesos(Number(t.total_price))}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {!envioGenerado && cotizacion && cotizacion.rates?.length === 0 && (
-                <p className="alerta-error">No hay tarifas disponibles para este destino.</p>
-              )}
-
-              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 8 }}>
-                <button className="btn-secundario" onClick={() => setModalGuia(false)}>Cerrar</button>
-                {!envioGenerado && tarifaSeleccionada && (
-                  <button className="btn-primario" style={{ width: "auto" }} onClick={confirmarGuia} disabled={creandoGuia}>
-                    {creandoGuia ? "Generando…" : "Confirmar y generar guía"}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Modal envío de correo */}
         {modalEmail && (
