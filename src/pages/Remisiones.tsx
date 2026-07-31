@@ -1071,7 +1071,7 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
     setCreandoGuia(true);
     setErrorGuia(null);
     try {
-      const envio = await skydropxApi.crearGuia(r.id, tarifaSeleccionada.id);
+      const envio = await skydropxApi.crearGuia(r.id, tarifaSeleccionada.id, cotizacion!.id);
       setEnvioGenerado(envio);
       setCotizacion(null);
     } catch (e) {

@@ -764,7 +764,6 @@ export interface TarifaSkydropx {
 export interface CotizacionSkydropx {
   id: string;
   is_completed: boolean;
-  cash_on_delivery: boolean;
   rates: TarifaSkydropx[];
 }
 
@@ -797,10 +796,10 @@ export interface Envio {
 export const skydropxApi = {
   cotizar: (remisionId: string) =>
     api<CotizacionSkydropx>(`/skydropx/remisiones/${remisionId}/cotizar`, { method: "POST" }),
-  crearGuia: (remisionId: string, rateId: string) =>
+  crearGuia: (remisionId: string, rateId: string, quotationId: string) =>
     api<Envio>(`/skydropx/remisiones/${remisionId}/guia`, {
       method: "POST",
-      body: JSON.stringify({ rateId }),
+      body: JSON.stringify({ rateId, quotationId }),
     }),
   seguimientos: () => api<Envio[]>("/skydropx/seguimientos"),
   rastrear: (envioId: string) => api<Envio>(`/skydropx/envios/${envioId}/rastrear`),
