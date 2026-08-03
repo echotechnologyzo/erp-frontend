@@ -763,7 +763,7 @@ export interface EnvioRemisionResumen {
 
 export interface Envio {
   id: string;
-  remisionId: string;
+  remisionId: string | null;
   skydropxId: string;
   tracking: string;
   carrier: string;
@@ -773,6 +773,11 @@ export interface Envio {
   contraentrega: boolean;
   montoContraentrega: number | null;
   estadoCobro: string | null;
+  // Datos de Skydropx (presentes cuando no hay remisión vinculada)
+  destinatarioNombre: string | null;
+  destinatarioCiudad: string | null;
+  origenCiudad: string | null;
+  fechaSkydropx: string | null;
   ultimaActualizacion: string;
   creadoEn: string;
   remision?: EnvioRemisionResumen;

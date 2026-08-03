@@ -170,10 +170,12 @@ export function Seguimientos() {
           <table className="tabla">
             <thead>
               <tr>
-                <th>Alerta</th>
+                <th></th>
+                <th>Fecha guía</th>
                 <th>Remisión</th>
-                <th>Cliente</th>
-                <th>Ciudad</th>
+                <th>Destinatario</th>
+                <th>Ciudad destino</th>
+                <th>Origen</th>
                 <th>Transportadora</th>
                 <th>Tracking</th>
                 <th>Estado</th>
@@ -187,25 +189,34 @@ export function Seguimientos() {
               {visibles.map((e) => {
                 const alerta = requiereAtencion(e);
                 const est = ESTADO_LABEL[e.estado] ?? { texto: e.estado, color: "#6b7280" };
-                const dias = diasDesde(e.creadoEn);
+                const fechaRef = e.fechaSkydropx ?? e.creadoEn;
+                const dias = diasDesde(fechaRef);
+                // Datos del destinatario: primero la remisión vinculada, luego los campos de Skydropx
+                const nombreDestinatario = e.remision?.cliente.nombre ?? e.destinatarioNombre ?? "—";
+                const ciudadDestino      = e.remision?.cliente.ciudad ?? e.destinatarioCiudad ?? "—";
+                const telefonoDestinatario = e.remision?.cliente.whatsapp ?? e.remision?.cliente.telefono ?? null;
+                const origen             = e.remision?.sede.nombre ?? e.origenCiudad ?? "—";
                 return (
                   <tr key={e.id} style={{ background: alerta ? "rgba(239,68,68,0.06)" : undefined }}>
-                    <td style={{ textAlign: "center", fontSize: 18 }}>
+                    <td style={{ textAlign: "center", fontSize: 16 }}>
                       {alerta ? "⚠️" : ""}
                     </td>
-                    <td style={{ fontWeight: 600 }}>
-                      {e.remision?.documento ?? "—"}<br />
-                      <span className="muted" style={{ fontSize: 12 }}>{e.remision ? fechaCorta(e.remision.fecha) : ""}</span>
+                    <td style={{ fontSize: 13, whiteSpace: "nowrap" }}>
+                      {fechaCorta(fechaRef)}
+                    </td>
+                    <td style={{ fontWeight: 600, fontSize: 13 }}>
+                      {e.remision?.documento ?? <span className="muted" style={{ fontWeight: 400 }}>Sin remisión</span>}
                     </td>
                     <td>
-                      {e.remision?.cliente.nombre ?? "—"}<br />
-                      <span className="muted" style={{ fontSize: 12 }}>
-                        {e.remision?.cliente.whatsapp ?? e.remision?.cliente.telefono ?? ""}
-                      </span>
+                      {nombreDestinatario}
+                      {telefonoDestinatario && (
+                        <><br /><span className="muted" style={{ fontSize: 12 }}>{telefonoDestinatario}</span></>
+                      )}
                     </td>
-                    <td>{e.remision?.cliente.ciudad ?? "—"}</td>
-                    <td style={{ textTransform: "capitalize" }}>{e.carrier}</td>
-                    <td style={{ fontFamily: "monospace", fontSize: 13 }}>{e.tracking}</td>
+                    <td>{ciudadDestino}</td>
+                    <td style={{ fontSize: 13 }}>{origen}</td>
+                    <td style={{ textTransform: "capitalize", fontSize: 13 }}>{e.carrier || "—"}</td>
+                    <td style={{ fontFamily: "monospace", fontSize: 12 }}>{e.tracking || "—"}</td>
                     <td>
                       <span style={{
                         background: est.color + "22",
@@ -219,7 +230,7 @@ export function Seguimientos() {
                         {est.texto}
                       </span>
                     </td>
-                    <td style={{ textAlign: "right" }}>
+                    <td style={{ textAlign: "right", fontSize: 13 }}>
                       {e.montoContraentrega ? pesos(e.montoContraentrega) : "—"}
                     </td>
                     <td>
@@ -229,7 +240,7 @@ export function Seguimientos() {
                         </span>
                       ) : "—"}
                     </td>
-                    <td style={{ textAlign: "center", color: dias >= 5 ? "#ef4444" : dias >= 3 ? "#f59e0b" : undefined }}>
+                    <td style={{ textAlign: "center", fontSize: 13, color: dias >= 5 ? "#ef4444" : dias >= 3 ? "#f59e0b" : undefined }}>
                       {dias}d
                     </td>
                     <td>
