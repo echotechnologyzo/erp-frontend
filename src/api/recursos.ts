@@ -783,6 +783,8 @@ export const skydropxApi = {
   rastrear: (envioId: string) => api<Envio>(`/skydropx/envios/${envioId}/rastrear`),
   actualizarEstados: () =>
     api<{ id: string; estado: string }[]>("/skydropx/actualizar-estados", { method: "POST" }),
+  registrar: (datos: { remisionId: string; tracking: string; carrier: string; skydropxId?: string; guiaUrl?: string }) =>
+    api<Envio>("/skydropx/registrar-guia", { method: "POST", body: JSON.stringify(datos) }),
 };
 
 // --- Auth público (recuperación de contraseña) ---

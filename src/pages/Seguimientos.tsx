@@ -4,7 +4,7 @@
 // requieren atención (novedad, pendiente más de 2 días, etc.).
 // ==========================================================================
 import { useEffect, useState } from "react";
-import { skydropxApi, type Envio } from "../api/recursos";
+import { skydropxApi, remisionesApi, type Envio, type Remision } from "../api/recursos";
 
 const ESTADO_LABEL: Record<string, { texto: string; color: string }> = {
   pendiente_recoleccion: { texto: "Pendiente recolección", color: "#f59e0b" },
@@ -41,6 +41,14 @@ export function Seguimientos() {
   const [actualizando, setActualizando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<"todos" | "atencion">("todos");
+  const [modalRegistrar, setModalRegistrar] = useState(false);
+  const [busquedaRemision, setBusquedaRemision] = useState("");
+  const [remisionesFound, setRemisionesFound] = useState<Remision[]>([]);
+  const [remisionSel, setRemisionSel] = useState<Remision | null>(null);
+  const [formTracking, setFormTracking] = useState("");
+  const [formCarrier, setFormCarrier] = useState("coordinadora");
+  const [guardando, setGuardando] = useState(false);
+  const [errorReg, setErrorReg] = useState<string | null>(null);
 
   async function cargar() {
     setCargando(true);
@@ -66,6 +74,31 @@ export function Seguimientos() {
     }
   }
 
+  async function buscarRemision(q: string) {
+    setBusquedaRemision(q);
+    setRemisionSel(null);
+    if (q.length < 2) { setRemisionesFound([]); return; }
+    try {
+      const res = await remisionesApi.listar({ buscar: q, pagina: 1, tam: 8 });
+      setRemisionesFound(res.datos);
+    } catch { setRemisionesFound([]); }
+  }
+
+  async function registrarGuia() {
+    if (!remisionSel || !formTracking.trim()) return;
+    setGuardando(true);
+    setErrorReg(null);
+    try {
+      await skydropxApi.registrar({ remisionId: remisionSel.id, tracking: formTracking.trim(), carrier: formCarrier });
+      setModalRegistrar(false);
+      setBusquedaRemision(""); setRemisionesFound([]); setRemisionSel(null);
+      setFormTracking(""); setFormCarrier("coordinadora");
+      await cargar();
+    } catch (e) {
+      setErrorReg(e instanceof Error ? e.message : "Error al registrar.");
+    } finally { setGuardando(false); }
+  }
+
   useEffect(() => { cargar(); }, []);
 
   const visibles = filtro === "atencion" ? envios.filter(requiereAtencion) : envios;
@@ -81,6 +114,9 @@ export function Seguimientos() {
           </button>
           <button className="btn-secundario" onClick={actualizarTodos} disabled={actualizando}>
             {actualizando ? "Actualizando…" : "Actualizar estados desde Skydropx"}
+          </button>
+          <button className="btn-primario" style={{ width: "auto" }} onClick={() => setModalRegistrar(true)}>
+            Registrar guía existente
           </button>
         </div>
       </div>
@@ -192,6 +228,63 @@ export function Seguimientos() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Modal registrar guía existente */}
+      {modalRegistrar && (
+        <div className="modal-fondo" onClick={() => setModalRegistrar(false)}>
+          <div className="modal" style={{ maxWidth: 480 }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ marginBottom: 16 }}>Registrar guía existente</h3>
+
+            {errorReg && <div className="alerta-error" style={{ marginBottom: 12 }}>{errorReg}</div>}
+
+            <label className="campo-label">Buscar remisión</label>
+            <input
+              className="campo-input"
+              placeholder="Número o nombre del cliente…"
+              value={busquedaRemision}
+              onChange={(e) => buscarRemision(e.target.value)}
+            />
+            {remisionesFound.length > 0 && !remisionSel && (
+              <div style={{ border: "1px solid var(--borde,#ddd)", borderRadius: 6, marginBottom: 12, maxHeight: 160, overflowY: "auto" }}>
+                {remisionesFound.map((r) => (
+                  <div
+                    key={r.id}
+                    style={{ padding: "8px 12px", cursor: "pointer" }}
+                    onClick={() => { setRemisionSel(r); setBusquedaRemision(r.documento); setRemisionesFound([]); }}
+                  >
+                    <strong>{r.documento}</strong> — {r.cliente}
+                  </div>
+                ))}
+              </div>
+            )}
+            {remisionSel && (
+              <p style={{ fontSize: 13, color: "var(--muted,#888)", marginBottom: 12 }}>
+                Seleccionada: <strong>{remisionSel.documento}</strong> — {remisionSel.cliente}
+              </p>
+            )}
+
+            <label className="campo-label">Número de tracking</label>
+            <input className="campo-input" placeholder="Ej. 58101068018" value={formTracking} onChange={(e) => setFormTracking(e.target.value)} />
+
+            <label className="campo-label">Transportadora</label>
+            <select className="campo-input" value={formCarrier} onChange={(e) => setFormCarrier(e.target.value)}>
+              <option value="coordinadora">Coordinadora</option>
+              <option value="interrapidisimo">Interrapidísimo</option>
+              <option value="servientrega">Servientrega</option>
+              <option value="tcc">TCC</option>
+              <option value="deprisa">Deprisa</option>
+              <option value="envia">Envia</option>
+            </select>
+
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>
+              <button className="btn-secundario" onClick={() => setModalRegistrar(false)}>Cancelar</button>
+              <button className="btn-primario" style={{ width: "auto" }} onClick={registrarGuia} disabled={guardando || !remisionSel || !formTracking.trim()}>
+                {guardando ? "Guardando…" : "Registrar"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
