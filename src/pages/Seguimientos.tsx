@@ -39,6 +39,7 @@ export function Seguimientos() {
   const [envios, setEnvios] = useState<Envio[]>([]);
   const [cargando, setCargando] = useState(true);
   const [actualizando, setActualizando] = useState(false);
+  const [sincronizando, setSincronizando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filtro, setFiltro] = useState<"todos" | "atencion">("todos");
   const [modalRegistrar, setModalRegistrar] = useState(false);
@@ -60,6 +61,18 @@ export function Seguimientos() {
     } finally {
       setCargando(false);
     }
+  }
+
+  async function sincronizar() {
+    setSincronizando(true);
+    setError(null);
+    try {
+      const r = await skydropxApi.sincronizar();
+      await cargar();
+      setError(`Sincronización completa: ${r.creados} nuevas, ${r.actualizados} actualizadas.`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al sincronizar.");
+    } finally { setSincronizando(false); }
   }
 
   async function actualizarTodos() {
@@ -115,8 +128,11 @@ export function Seguimientos() {
           <button className="btn-secundario" onClick={actualizarTodos} disabled={actualizando}>
             {actualizando ? "Actualizando…" : "Actualizar estados desde Skydropx"}
           </button>
+          <button className="btn-secundario" onClick={sincronizar} disabled={sincronizando}>
+            {sincronizando ? "Sincronizando…" : "Sincronizar desde Skydropx"}
+          </button>
           <button className="btn-primario" style={{ width: "auto" }} onClick={() => setModalRegistrar(true)}>
-            Registrar guía existente
+            Registrar guía
           </button>
         </div>
       </div>
