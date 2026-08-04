@@ -120,10 +120,11 @@ export function parsearMensajeWA(texto: string): MensajeParsado {
 export function buscarArticuloSimilar<
   T extends { id: string; nombre: string; codigo: string }
 >(descripcion: string, catalogo: T[]): T | null {
+  // Incluye palabras de 2 letras (hd, 4k, tv, etc.) para mejor precisión
   const palabras = descripcion
     .toLowerCase()
     .split(/\s+/)
-    .filter((p) => p.length > 2);
+    .filter((p) => p.length >= 2);
 
   if (palabras.length === 0) return null;
 

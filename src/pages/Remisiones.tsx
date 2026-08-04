@@ -1341,13 +1341,14 @@ function ModalDesdeWhatsApp({
     setMedioPago(parsado.medioPago);
 
     // Construir items con auto-match del catálogo
-    const ES_ENVIO = /^(env[íi]o|flete|domicilio|transporte|despacho|shipping)$/i;
+    // Palabras clave que indican costo de envío → buscar artículo "Flete" primero
+    const ES_ENVIO = /env[íi]o|flete|domicilio|transporte|despacho|shipping/i;
     const itemsEd: ItemEditable[] = parsado.items.map((item) => {
-      // Para ítems de envío/flete, buscar primero artículo "domicilio" o "flete"
-      const matched = ES_ENVIO.test(item.descripcion.trim())
-        ? (buscarArticuloSimilar("domicilio", catalogo) ??
-           buscarArticuloSimilar("flete", catalogo) ??
+      const matched = ES_ENVIO.test(item.descripcion)
+        ? (buscarArticuloSimilar("flete", catalogo) ??
+           buscarArticuloSimilar("domicilio", catalogo) ??
            buscarArticuloSimilar("envio", catalogo) ??
+           buscarArticuloSimilar("transporte", catalogo) ??
            buscarArticuloSimilar(item.descripcion, catalogo))
         : buscarArticuloSimilar(item.descripcion, catalogo);
       return {
@@ -1360,11 +1361,13 @@ function ModalDesdeWhatsApp({
       };
     });
 
-    // Si hay domicilio, agregar como ítem extra (buscar artículo "domicilio")
+    // Si hay domicilio separado, agregar como ítem extra → buscar "Flete" primero
     if (parsado.domicilio > 0) {
       const artDom =
+        buscarArticuloSimilar("flete", catalogo) ??
         buscarArticuloSimilar("domicilio", catalogo) ??
-        buscarArticuloSimilar("flete", catalogo);
+        buscarArticuloSimilar("envio", catalogo) ??
+        buscarArticuloSimilar("transporte", catalogo);
       itemsEd.push({
         cantidad: 1,
         descripcionWA: "Domicilio",
@@ -1455,15 +1458,22 @@ function ModalDesdeWhatsApp({
   }
 
   // ── Buscar artículo en un ítem ───────────────────────────────────────────────
+  // Divide la búsqueda en palabras: "onn hd" → encuentra artículos que
+  // contengan "onn" Y "hd" en el nombre (no require substring exacto).
   function buscarEnItem(idx: number, q: string) {
+    const terminos = q.toLowerCase().split(/\s+/).filter((t) => t.length >= 2);
     const resultados = catalogo
       .filter(
         (a) =>
           a.activo !== false &&
-          (a.nombre.toLowerCase().includes(q.toLowerCase()) ||
-            a.codigo.toLowerCase().includes(q.toLowerCase()))
+          terminos.length > 0 &&
+          terminos.every(
+            (t) =>
+              a.nombre.toLowerCase().includes(t) ||
+              a.codigo.toLowerCase().includes(t)
+          )
       )
-      .slice(0, 8);
+      .slice(0, 10);
 
     setItems((prev) =>
       prev.map((it, i) =>
@@ -1548,11 +1558,10 @@ function ModalDesdeWhatsApp({
   const totalItems = items.reduce((s, i) => s + i.precio * i.cantidad, 0);
 
   return (
-    <div className="modal-fondo" onClick={onCerrar}>
+    <div className="modal-fondo" style={{ background: "rgba(0,0,0,0.82)" }}>
       <div
         className="modal"
-        style={{ maxWidth: 660, maxHeight: "92vh", overflowY: "auto" }}
-        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: 660, maxHeight: "92vh", overflowY: "auto", background: "var(--superficie, #fff)" }}
       >
         {/* Encabezado */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
