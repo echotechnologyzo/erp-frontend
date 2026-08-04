@@ -41,7 +41,7 @@ export function Seguimientos() {
   const [actualizando, setActualizando] = useState(false);
   const [sincronizando, setSincronizando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filtro, setFiltro] = useState<"todos" | "atencion">("todos");
+  const [filtro, setFiltro] = useState<"todos" | "activos" | "entregados" | "atencion">("activos");
   const [modalRegistrar, setModalRegistrar] = useState(false);
   const [busquedaRemision, setBusquedaRemision] = useState("");
   const [remisionesFound, setRemisionesFound] = useState<Remision[]>([]);
@@ -114,8 +114,14 @@ export function Seguimientos() {
 
   useEffect(() => { cargar(); }, []);
 
-  const visibles = filtro === "atencion" ? envios.filter(requiereAtencion) : envios;
-  const conAtencion = envios.filter(requiereAtencion).length;
+  const activos     = envios.filter((e) => e.estado !== "entregado" && e.estado !== "cancelado");
+  const entregados  = envios.filter((e) => e.estado === "entregado");
+  const conAtencion = activos.filter(requiereAtencion).length;
+  const visibles =
+    filtro === "atencion"   ? activos.filter(requiereAtencion) :
+    filtro === "activos"    ? activos :
+    filtro === "entregados" ? entregados :
+    envios;
 
   return (
     <div className="pagina">
@@ -141,30 +147,38 @@ export function Seguimientos() {
 
       {/* Resumen rápido */}
       <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
-        <TarjetaResumen titulo="Total activos" valor={envios.length} color="#3b82f6" />
+        <TarjetaResumen titulo="Activos" valor={activos.length} color="#3b82f6" />
+        <TarjetaResumen titulo="Entregados" valor={entregados.length} color="#22c55e" />
         <TarjetaResumen titulo="Requieren atención" valor={conAtencion} color="#ef4444" />
-        <TarjetaResumen titulo="En tránsito" valor={envios.filter((e) => e.estado === "en_transito").length} color="#3b82f6" />
-        <TarjetaResumen titulo="Pendiente recolección" valor={envios.filter((e) => e.estado === "pendiente_recoleccion").length} color="#f59e0b" />
+        <TarjetaResumen titulo="En tránsito" valor={activos.filter((e) => e.estado === "en_transito").length} color="#3b82f6" />
+        <TarjetaResumen titulo="Pendiente recolección" valor={activos.filter((e) => e.estado === "pendiente_recoleccion").length} color="#f59e0b" />
       </div>
 
       {/* Filtros */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        {(["todos", "atencion"] as const).map((f) => (
-          <button
-            key={f}
-            className={filtro === f ? "btn-primario" : "btn-secundario"}
-            style={{ width: "auto" }}
-            onClick={() => setFiltro(f)}
-          >
-            {f === "todos" ? "Todos" : `Requieren atención (${conAtencion})`}
-          </button>
-        ))}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+        <button className={filtro === "activos"    ? "btn-primario" : "btn-secundario"} style={{ width: "auto" }} onClick={() => setFiltro("activos")}>
+          Activos ({activos.length})
+        </button>
+        <button className={filtro === "entregados" ? "btn-primario" : "btn-secundario"} style={{ width: "auto" }} onClick={() => setFiltro("entregados")}>
+          Entregados ({entregados.length})
+        </button>
+        <button className={filtro === "atencion"   ? "btn-primario" : "btn-secundario"} style={{ width: "auto" }} onClick={() => setFiltro("atencion")}>
+          Requieren atención ({conAtencion})
+        </button>
+        <button className={filtro === "todos"      ? "btn-primario" : "btn-secundario"} style={{ width: "auto" }} onClick={() => setFiltro("todos")}>
+          Todos ({envios.length})
+        </button>
       </div>
 
       {cargando ? (
         <p className="muted">Cargando…</p>
       ) : visibles.length === 0 ? (
-        <p className="muted">{filtro === "atencion" ? "Ningún envío requiere atención." : "No hay envíos activos."}</p>
+        <p className="muted">
+          {filtro === "atencion"   ? "Ningún envío requiere atención." :
+           filtro === "entregados" ? "No hay envíos entregados." :
+           filtro === "activos"    ? "No hay envíos activos." :
+           "No hay envíos registrados."}
+        </p>
       ) : (
         <div style={{ overflowX: "auto" }}>
           <table className="tabla">
