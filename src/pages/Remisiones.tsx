@@ -27,6 +27,7 @@ import {
 } from "../api/recursos";
 import { ModalCliente } from "./Clientes";
 import { SelectorArticulo } from "../components/SelectorArticulo";
+import { parsearMensajeWA, buscarArticuloSimilar, type MensajeParsado } from "../utils/whatsapp";
 
 // Formato de dinero igual al del PDF actual: "$205,000" (coma de miles).
 const pesos = (v: number) => "$" + Math.round(Number(v)).toLocaleString("en-US");
@@ -41,6 +42,7 @@ export function Remisiones() {
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [modal, setModal] = useState(false);
+  const [modalWhatsApp, setModalWhatsApp] = useState(false);
   const [duplicarBase, setDuplicarBase] = useState<RemisionCompleta | null>(null);
   const [imprimir, setImprimir] = useState<RemisionCompleta | null>(null);
   const [modalConsec, setModalConsec] = useState(false);
@@ -229,6 +231,13 @@ export function Remisiones() {
               Consecutivos
             </button>
           )}
+          <button
+            className="btn-secundario"
+            style={{ width: "auto", background: "#25d366", color: "#fff", border: "none" }}
+            onClick={() => setModalWhatsApp(true)}
+          >
+            ⚡ Desde WhatsApp
+          </button>
           <button className="btn-primario" style={{ width: "auto" }} onClick={() => setModal(true)}>
             + Crear remisión
           </button>
@@ -375,6 +384,17 @@ export function Remisiones() {
       {cuentaCobro && <CuentaCobroPDF data={cuentaCobro} remisionId={cuentaCobroRemisionId} onCerrar={() => setCuentaCobro(null)} />}
 
       {modalConsec && <ModalConsecutivos onCerrar={() => setModalConsec(false)} />}
+
+      {modalWhatsApp && (
+        <ModalDesdeWhatsApp
+          onCerrar={() => setModalWhatsApp(false)}
+          onCreado={(id) => {
+            setModalWhatsApp(false);
+            verPdf(id); // abre el PDF de la remisión recién creada
+            cargar();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1239,6 +1259,566 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Modal "Crear desde WhatsApp"
+// Paso 1: pegar el mensaje → Paso 2: revisar y crear la remisión
+// =============================================================================
+
+interface ItemEditable {
+  cantidad: number;
+  descripcionWA: string;
+  precio: number;
+  articulo: Articulo | null;
+  busqueda: string;
+  resultados: Articulo[];
+}
+
+function ModalDesdeWhatsApp({
+  onCerrar,
+  onCreado,
+}: {
+  onCerrar: () => void;
+  onCreado: (id: string) => void;
+}) {
+  // ── Catálogo y sedes ─────────────────────────────────────────────────────────
+  const [catalogo, setCatalogo] = useState<Articulo[]>([]);
+  const [sedes, setSedes] = useState<Sede[]>([]);
+
+  useEffect(() => {
+    articulosApi.listar("").then(setCatalogo).catch(() => {});
+    catalogosApi.sedes().then((ss) => {
+      setSedes(ss);
+      if (ss.length) setSedeId(ss[0].id);
+    }).catch(() => {});
+  }, []);
+
+  // ── Estado de pasos ──────────────────────────────────────────────────────────
+  const [paso, setPaso] = useState<1 | 2>(1);
+  const [texto, setTexto] = useState("");
+  const [analizando, setAnalizando] = useState(false);
+
+  // ── Campos editables del cliente ─────────────────────────────────────────────
+  const [documento, setDocumento] = useState("");
+  const [nombre, setNombre] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [email, setEmail] = useState("");
+  const [direccion, setDireccion] = useState("");
+
+  // ── Pago y sede ──────────────────────────────────────────────────────────────
+  const [medioPago, setMedioPago] = useState("");
+  const [sedeId, setSedeId] = useState("");
+
+  // ── Items ────────────────────────────────────────────────────────────────────
+  const [items, setItems] = useState<ItemEditable[]>([]);
+
+  // ── Cliente encontrado ───────────────────────────────────────────────────────
+  const [clienteId, setClienteId] = useState<string | null>(null);
+  const [clienteStatus, setClienteStatus] = useState<"buscando" | "encontrado" | "nuevo" | null>(null);
+
+  // ── Estado de creación ───────────────────────────────────────────────────────
+  const [creando, setCreando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // ── Paso 1 → 2: analizar mensaje ────────────────────────────────────────────
+  async function analizar() {
+    if (!texto.trim()) return;
+    setAnalizando(true);
+    setError(null);
+
+    const parsado: MensajeParsado = parsearMensajeWA(texto);
+
+    // Rellenar campos del cliente
+    setDocumento(parsado.documento);
+    setNombre(parsado.nombre);
+    setTelefono(parsado.telefono);
+    setEmail(parsado.email);
+    setDireccion(parsado.direccion);
+    setMedioPago(parsado.medioPago);
+
+    // Construir items con auto-match del catálogo
+    const itemsEd: ItemEditable[] = parsado.items.map((item) => {
+      const matched = buscarArticuloSimilar(item.descripcion, catalogo);
+      return {
+        cantidad: item.cantidad,
+        descripcionWA: item.descripcion,
+        precio: item.precio,
+        articulo: matched,
+        busqueda: matched?.nombre ?? item.descripcion,
+        resultados: [],
+      };
+    });
+
+    // Si hay domicilio, agregar como ítem extra (buscar artículo "domicilio")
+    if (parsado.domicilio > 0) {
+      const artDom =
+        buscarArticuloSimilar("domicilio", catalogo) ??
+        buscarArticuloSimilar("flete", catalogo);
+      itemsEd.push({
+        cantidad: 1,
+        descripcionWA: "Domicilio",
+        precio: parsado.domicilio,
+        articulo: artDom,
+        busqueda: artDom?.nombre ?? "domicilio",
+        resultados: [],
+      });
+    }
+
+    setItems(itemsEd);
+
+    // ── Buscar cliente: primero por documento, luego por teléfono ────────────
+    // Si no hay CC, usamos el teléfono como documento provisional
+    const docBuscar = parsado.documento || parsado.telefono;
+    if (parsado.documento) setDocumento(parsado.documento);
+    else if (parsado.telefono) setDocumento(parsado.telefono); // teléfono como CC fallback
+
+    if (docBuscar) {
+      setClienteStatus("buscando");
+      try {
+        // Intento 1: buscar por documento exacto (o el teléfono si no hay CC)
+        const res = await clientesApi.listar(docBuscar, 1, 10);
+
+        // Preferencia: documento exacto > teléfono coincide > primero del resultado
+        const porDocumento = parsado.documento
+          ? res.datos.find((c) => c.documento === parsado.documento)
+          : null;
+        const porTelefono = parsado.telefono
+          ? res.datos.find(
+              (c) =>
+                c.telefono1 === parsado.telefono ||
+                (c as any).celular === parsado.telefono ||
+                (c as any).whatsapp === parsado.telefono
+            )
+          : null;
+
+        const encontrado = porDocumento ?? porTelefono;
+
+        if (encontrado) {
+          setClienteId(encontrado.id);
+          setClienteStatus("encontrado");
+          // Completar campos vacíos con datos del cliente existente
+          if (!parsado.nombre && encontrado.nombre) setNombre(encontrado.nombre);
+          if (!parsado.telefono && (encontrado as any).celular) setTelefono((encontrado as any).celular);
+          if (!parsado.email && encontrado.email) setEmail(encontrado.email ?? "");
+          if (!parsado.direccion && encontrado.direccion) setDireccion(encontrado.direccion ?? "");
+        } else if (!parsado.documento && parsado.telefono) {
+          // Sin CC y sin match: intentar búsqueda por nombre si lo tenemos
+          if (parsado.nombre) {
+            const res2 = await clientesApi.listar(parsado.nombre, 1, 5);
+            const porNombre = res2.datos.find(
+              (c) =>
+                c.nombre.toLowerCase().includes(parsado.nombre.toLowerCase().split(" ")[0]) &&
+                (
+                  (c as any).celular === parsado.telefono ||
+                  c.telefono1 === parsado.telefono ||
+                  (c as any).whatsapp === parsado.telefono
+                )
+            );
+            if (porNombre) {
+              setClienteId(porNombre.id);
+              setDocumento(porNombre.documento); // usar el CC real del sistema
+              setClienteStatus("encontrado");
+            } else {
+              setClienteId(null);
+              setClienteStatus("nuevo");
+            }
+          } else {
+            setClienteId(null);
+            setClienteStatus("nuevo");
+          }
+        } else {
+          setClienteId(null);
+          setClienteStatus("nuevo");
+        }
+      } catch {
+        setClienteId(null);
+        setClienteStatus("nuevo");
+      }
+    } else {
+      setClienteId(null);
+      setClienteStatus("nuevo");
+    }
+
+    setPaso(2);
+    setAnalizando(false);
+  }
+
+  // ── Buscar artículo en un ítem ───────────────────────────────────────────────
+  function buscarEnItem(idx: number, q: string) {
+    const resultados = catalogo
+      .filter(
+        (a) =>
+          a.activo !== false &&
+          (a.nombre.toLowerCase().includes(q.toLowerCase()) ||
+            a.codigo.toLowerCase().includes(q.toLowerCase()))
+      )
+      .slice(0, 8);
+
+    setItems((prev) =>
+      prev.map((it, i) =>
+        i === idx
+          ? { ...it, busqueda: q, resultados, articulo: null }
+          : it
+      )
+    );
+  }
+
+  function seleccionarArticuloEnItem(idx: number, art: Articulo) {
+    setItems((prev) =>
+      prev.map((it, i) =>
+        i === idx
+          ? { ...it, articulo: art, busqueda: art.nombre, resultados: [] }
+          : it
+      )
+    );
+  }
+
+  function actualizarCantidad(idx: number, val: number) {
+    setItems((prev) =>
+      prev.map((it, i) => (i === idx ? { ...it, cantidad: val || 1 } : it))
+    );
+  }
+
+  function quitarItem(idx: number) {
+    setItems((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  // ── Paso 2: crear remisión ───────────────────────────────────────────────────
+  async function crear() {
+    if (!sedeId) { setError("Selecciona una sede."); return; }
+    const itemsValidos = items.filter((i) => i.articulo !== null);
+    if (itemsValidos.length === 0) {
+      setError("Asigna al menos un artículo del catálogo a los productos detectados.");
+      return;
+    }
+    setCreando(true);
+    setError(null);
+
+    try {
+      // 1. Encontrar o crear el cliente
+      let cId = clienteId;
+
+      if (!cId) {
+        const c = await clientesApi.crear({
+          documento: documento.trim() || `TEMP${Date.now()}`,
+          nombre: nombre.trim() || "Sin nombre",
+          telefono1: telefono.trim() || undefined,
+          celular: telefono.trim() || undefined,
+          whatsapp: telefono.trim() || undefined,
+          email: email.trim() || undefined,
+          direccion: direccion.trim() || undefined,
+        });
+        cId = c.id;
+      }
+
+      // 2. Crear la remisión
+      const { id } = await remisionesApi.crear({
+        sedeId,
+        clienteId: cId,
+        medioPago: medioPago.trim() || undefined,
+        items: itemsValidos.map((i) => ({
+          articuloId: i.articulo!.id,
+          cantidad: i.cantidad,
+          precioUnitario: i.precio,
+        })),
+      });
+
+      onCreado(id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al crear la remisión.");
+    } finally {
+      setCreando(false);
+    }
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────────────
+  const $ = (v: number) => "$" + Math.round(v).toLocaleString("en-US");
+  const itemsConArticulo = items.filter((i) => i.articulo).length;
+  const totalItems = items.reduce((s, i) => s + i.precio * i.cantidad, 0);
+
+  return (
+    <div className="modal-fondo" onClick={onCerrar}>
+      <div
+        className="modal"
+        style={{ maxWidth: 660, maxHeight: "92vh", overflowY: "auto" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Encabezado */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h3 style={{ margin: 0 }}>
+            ⚡ Crear remisión desde WhatsApp
+            {paso === 2 && (
+              <span style={{ fontSize: 13, fontWeight: 400, color: "var(--muted,#888)", marginLeft: 10 }}>
+                — revisión
+              </span>
+            )}
+          </h3>
+          <button className="btn-secundario" style={{ padding: "4px 10px" }} onClick={onCerrar}>
+            ✕
+          </button>
+        </div>
+
+        {error && (
+          <div className="alerta-error" style={{ marginBottom: 12 }}>
+            {error}
+          </div>
+        )}
+
+        {/* ─── PASO 1: Pegar mensaje ──────────────────────────────────────────── */}
+        {paso === 1 && (
+          <>
+            <p style={{ color: "var(--muted,#888)", fontSize: 13, marginBottom: 12 }}>
+              Copia el mensaje de WhatsApp con el pedido y pégalo aquí. El ERP
+              detecta automáticamente el cliente, los productos y el medio de pago.
+            </p>
+            <textarea
+              className="campo-input"
+              rows={11}
+              placeholder={
+                "⭐la estrella\n" +
+                "1 onn HD : 115.000\n" +
+                "Lina maria alzate cano\n" +
+                "3003926693\n" +
+                "Calle 82 sur 61 48 la estrella...\n" +
+                "Pago por transferencia\n" +
+                "Cc43877391\n" +
+                "Lalzatenaly@hotmail.com\n" +
+                "Domicilio : 18.000\n" +
+                "Total : 133.000"
+              }
+              value={texto}
+              onChange={(e) => setTexto(e.target.value)}
+              style={{ fontFamily: "monospace", fontSize: 12.5, resize: "vertical" }}
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+              <button
+                className="btn-primario"
+                style={{ width: "auto" }}
+                onClick={analizar}
+                disabled={analizando || !texto.trim() || catalogo.length === 0}
+              >
+                {analizando
+                  ? "Analizando…"
+                  : catalogo.length === 0
+                  ? "Cargando catálogo…"
+                  : "Analizar mensaje ▶"}
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ─── PASO 2: Revisar y crear ───────────────────────────────────────── */}
+        {paso === 2 && (
+          <>
+            {/* Cliente */}
+            <div style={{
+              background: "var(--superficie)",
+              border: `1px solid ${clienteStatus === "encontrado" ? "#22c55e44" : "#f59e0b44"}`,
+              borderRadius: 8,
+              padding: 12,
+              marginBottom: 14,
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <strong style={{ fontSize: 13 }}>Cliente</strong>
+                {clienteStatus === "buscando" && (
+                  <span style={{ fontSize: 12, color: "var(--muted,#888)" }}>Buscando…</span>
+                )}
+                {clienteStatus === "encontrado" && (
+                  <span style={{ fontSize: 12, color: "#22c55e", fontWeight: 600 }}>✅ Cliente existente</span>
+                )}
+                {clienteStatus === "nuevo" && (
+                  <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 600 }}>⚠️ Se creará nuevo cliente</span>
+                )}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                <div>
+                  <label className="campo-label">CC / Documento</label>
+                  <input className="campo-input" value={documento} onChange={(e) => setDocumento(e.target.value)} />
+                </div>
+                <div>
+                  <label className="campo-label">Nombre completo</label>
+                  <input className="campo-input" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+                </div>
+                <div>
+                  <label className="campo-label">Teléfono / WhatsApp</label>
+                  <input className="campo-input" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
+                </div>
+                <div>
+                  <label className="campo-label">Email</label>
+                  <input className="campo-input" value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+              </div>
+              <label className="campo-label" style={{ marginTop: 8 }}>Dirección</label>
+              <input className="campo-input" value={direccion} onChange={(e) => setDireccion(e.target.value)} />
+            </div>
+
+            {/* Sede y medio de pago */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+              <div>
+                <label className="campo-label">Sede *</label>
+                <select className="campo-input" value={sedeId} onChange={(e) => setSedeId(e.target.value)}>
+                  {sedes.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="campo-label">Medio de pago</label>
+                <input
+                  className="campo-input"
+                  value={medioPago}
+                  onChange={(e) => setMedioPago(e.target.value)}
+                  placeholder="Ej. Transferencia bancaria"
+                />
+              </div>
+            </div>
+
+            {/* Artículos */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                <strong style={{ fontSize: 13 }}>
+                  Artículos detectados ({items.length})
+                </strong>
+                <span style={{ fontSize: 12, color: "var(--muted,#888)" }}>
+                  {itemsConArticulo}/{items.length} asignados · Total: <strong>{$(totalItems)}</strong>
+                </span>
+              </div>
+
+              {items.length === 0 && (
+                <p style={{ fontSize: 13, color: "var(--muted,#888)" }}>
+                  No se detectaron productos en el mensaje. Puedes crear la remisión igualmente y agregar artículos manualmente.
+                </p>
+              )}
+
+              {items.map((item, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    border: `1px solid ${item.articulo ? "#22c55e44" : "#f59e0b44"}`,
+                    borderLeft: `3px solid ${item.articulo ? "#22c55e" : "#f59e0b"}`,
+                    borderRadius: 8,
+                    padding: 10,
+                    marginBottom: 8,
+                    background: "var(--superficie)",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ fontSize: 12, color: "var(--muted,#888)", marginBottom: 6 }}>
+                      WhatsApp: «{item.cantidad}× {item.descripcionWA}» —{" "}
+                      <strong style={{ color: "var(--texto)" }}>{$(item.precio)}</strong>
+                    </div>
+                    <button
+                      onClick={() => quitarItem(idx)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "var(--muted,#888)",
+                        fontSize: 14,
+                        padding: "0 4px",
+                        lineHeight: 1,
+                      }}
+                      title="Quitar ítem"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    {/* Buscador de artículo */}
+                    <div style={{ flex: 1, position: "relative" }}>
+                      <input
+                        className="campo-input"
+                        style={{ margin: 0 }}
+                        placeholder="Buscar artículo del catálogo…"
+                        value={item.busqueda}
+                        onChange={(e) => buscarEnItem(idx, e.target.value)}
+                      />
+                      {item.resultados.length > 0 && (
+                        <div style={{
+                          position: "absolute",
+                          top: "100%",
+                          left: 0,
+                          right: 0,
+                          background: "var(--superficie)",
+                          border: "1px solid var(--borde,#ddd)",
+                          borderRadius: 6,
+                          zIndex: 20,
+                          maxHeight: 180,
+                          overflowY: "auto",
+                          boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                        }}>
+                          {item.resultados.map((art) => (
+                            <div
+                              key={art.id}
+                              style={{ padding: "7px 12px", cursor: "pointer", fontSize: 13 }}
+                              onMouseDown={() => seleccionarArticuloEnItem(idx, art)}
+                            >
+                              <span style={{ color: "var(--muted,#888)", fontSize: 11, marginRight: 6 }}>
+                                {art.codigo}
+                              </span>
+                              {art.nombre}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Cantidad */}
+                    <div style={{ width: 64 }}>
+                      <input
+                        className="campo-input"
+                        type="number"
+                        min={1}
+                        style={{ margin: 0, textAlign: "center" }}
+                        value={item.cantidad}
+                        onChange={(e) => actualizarCantidad(idx, parseInt(e.target.value, 10))}
+                        title="Cantidad"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Artículo asignado */}
+                  {item.articulo && (
+                    <div style={{ fontSize: 12, color: "#22c55e", marginTop: 5 }}>
+                      ✅ {item.articulo.codigo} — {item.articulo.nombre}
+                    </div>
+                  )}
+                  {!item.articulo && item.busqueda && (
+                    <div style={{ fontSize: 12, color: "#f59e0b", marginTop: 5 }}>
+                      ⚠️ Escribe para buscar el artículo en el catálogo
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Botones */}
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, paddingTop: 4 }}>
+              <button
+                className="btn-secundario"
+                onClick={() => { setPaso(1); setError(null); }}
+                disabled={creando}
+              >
+                ← Editar mensaje
+              </button>
+              <button
+                className="btn-primario"
+                style={{ width: "auto" }}
+                onClick={crear}
+                disabled={creando || !sedeId}
+              >
+                {creando ? "Creando remisión…" : `✅ Crear remisión ${itemsConArticulo > 0 ? `(${itemsConArticulo} art.)` : ""}`}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
