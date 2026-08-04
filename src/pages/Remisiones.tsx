@@ -1025,6 +1025,7 @@ const EMISOR = {
 
 function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompleta; onCerrar: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [generandoPdf, setGenerandoPdf] = useState(false);
   const fechaTxt = (s: string | null) => (s ? new Date(s).toLocaleString("es-CO") : "—");
   const totalUnidades = r.detalles.reduce((a, d) => a + Number(d.cantidad), 0);
   const conGarantia = r.detalles.filter((d) => !d.esTercero);
@@ -1036,15 +1037,25 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
   const [emailDestino, setEmailDestino] = useState(r.cliente.email ?? "");
   const [avisoEmail, setAvisoEmail] = useState<string | null>(null);
 
-  function imprimir() {
-    const tituloPrevio = document.title;
-    document.title = `Remisión ${r.documento}`;
-    const restaurar = () => {
-      document.title = tituloPrevio;
-      window.removeEventListener("afterprint", restaurar);
-    };
-    window.addEventListener("afterprint", restaurar);
-    window.print();
+  // Genera el PDF directamente con html2pdf (evita el problema de múltiples páginas
+  // que ocurre con window.print() cuando hay elementos ocultos en el layout).
+  async function imprimir() {
+    if (!ref.current) return;
+    setGenerandoPdf(true);
+    try {
+      const opt = {
+        margin: [8, 8, 8, 8] as [number, number, number, number],
+        filename: `Remision_${r.documento}.pdf`,
+        image: { type: "jpeg" as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "letter", orientation: "portrait" as const },
+      };
+      await html2pdf().set(opt).from(ref.current).save();
+    } catch (err) {
+      console.error("Error al generar PDF:", err);
+    } finally {
+      setGenerandoPdf(false);
+    }
   }
 
   async function enviarEmail() {
@@ -1072,8 +1083,8 @@ function RemisionImprimible({ remision: r, onCerrar }: { remision: RemisionCompl
               Enviar por correo
             </button>
 
-            <button className="btn-primario" style={{ width: "auto" }} onClick={imprimir}>
-              Imprimir / Guardar PDF
+            <button className="btn-primario" style={{ width: "auto" }} onClick={imprimir} disabled={generandoPdf}>
+              {generandoPdf ? "Generando PDF…" : "Guardar PDF"}
             </button>
           </div>
         </div>
