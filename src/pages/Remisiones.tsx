@@ -1341,8 +1341,15 @@ function ModalDesdeWhatsApp({
     setMedioPago(parsado.medioPago);
 
     // Construir items con auto-match del catálogo
+    const ES_ENVIO = /^(env[íi]o|flete|domicilio|transporte|despacho|shipping)$/i;
     const itemsEd: ItemEditable[] = parsado.items.map((item) => {
-      const matched = buscarArticuloSimilar(item.descripcion, catalogo);
+      // Para ítems de envío/flete, buscar primero artículo "domicilio" o "flete"
+      const matched = ES_ENVIO.test(item.descripcion.trim())
+        ? (buscarArticuloSimilar("domicilio", catalogo) ??
+           buscarArticuloSimilar("flete", catalogo) ??
+           buscarArticuloSimilar("envio", catalogo) ??
+           buscarArticuloSimilar(item.descripcion, catalogo))
+        : buscarArticuloSimilar(item.descripcion, catalogo);
       return {
         cantidad: item.cantidad,
         descripcionWA: item.descripcion,

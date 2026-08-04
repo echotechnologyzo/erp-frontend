@@ -90,8 +90,9 @@ export function parsearMensajeWA(texto: string): MensajeParsado {
       continue;
     }
 
-    // Producto: "N <nombre> : <precio>"
-    const prodMatch = linea.match(/^(\d+)\s+(.+?)\s*:\s*([\d.,]+)\s*$/);
+    // Producto: "N <nombre> : <precio>" — acepta texto adicional tras el precio
+    // ("cada uno", "c/u", etc.)
+    const prodMatch = linea.match(/^(\d+)\s+(.+?)\s*:\s*([\d.,]+)/);
     if (prodMatch) {
       items.push({
         cantidad: parseInt(prodMatch[1], 10),
