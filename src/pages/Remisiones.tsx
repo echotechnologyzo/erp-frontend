@@ -44,6 +44,7 @@ export function Remisiones() {
   const [modal, setModal] = useState(false);
   const [modalWhatsApp, setModalWhatsApp] = useState(false);
   const [duplicarBase, setDuplicarBase] = useState<RemisionCompleta | null>(null);
+  const [editarFecha, setEditarFecha] = useState<Remision | null>(null);
   const [imprimir, setImprimir] = useState<RemisionCompleta | null>(null);
   const [modalConsec, setModalConsec] = useState(false);
   const [cuentaCobro, setCuentaCobro] = useState<CuentaCobro | null>(null);
@@ -302,6 +303,11 @@ export function Remisiones() {
                       <button className="btn-secundario" style={{ padding: "6px 12px" }} onClick={() => duplicar(r)}>
                         Duplicar
                       </button>
+                      {esAdmin && (
+                        <button className="btn-secundario" style={{ padding: "6px 12px" }} onClick={() => setEditarFecha(r)}>
+                          Fecha
+                        </button>
+                      )}
                       {r.estado === "ANULADA" ? (
                         <span className="badge-sede">Anulada</span>
                       ) : (
@@ -380,6 +386,14 @@ export function Remisiones() {
       )}
 
       {imprimir && <RemisionImprimible remision={imprimir} onCerrar={() => setImprimir(null)} />}
+
+      {editarFecha && (
+        <ModalFecha
+          remision={editarFecha}
+          onCerrar={() => setEditarFecha(null)}
+          onGuardado={() => { setEditarFecha(null); cargar(buscar); }}
+        />
+      )}
 
       {cuentaCobro && <CuentaCobroPDF data={cuentaCobro} remisionId={cuentaCobroRemisionId} onCerrar={() => setCuentaCobro(null)} />}
 
@@ -692,6 +706,73 @@ function ModalCrearRemision({
       />
     )}
     </>
+  );
+}
+
+// --------------------------------------------------------------------------
+// Modal (ADMIN) para corregir la fecha de una remisión. Cambia la fecha en el
+// sistema; el PDF regenerado sale con la nueva fecha (documento y registro
+// quedan consistentes).
+// --------------------------------------------------------------------------
+function ModalFecha({
+  remision,
+  onCerrar,
+  onGuardado,
+}: {
+  remision: Remision;
+  onCerrar: () => void;
+  onGuardado: () => void;
+}) {
+  const aISO = (s: string) => {
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+  };
+  const [fecha, setFecha] = useState(aISO(remision.fecha));
+  const [error, setError] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!fecha) {
+      setError("Elige una fecha.");
+      return;
+    }
+    setError(null);
+    setGuardando(true);
+    try {
+      // Mediodía local para que no se corra un día por zona horaria.
+      await remisionesApi.cambiarFecha(remision.id, `${fecha}T12:00:00`);
+      onGuardado();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al cambiar la fecha.");
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  return (
+    <div className="modal-fondo">
+      <div className="modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+        <h2>Cambiar fecha · {remision.documento}</h2>
+        <form onSubmit={onSubmit}>
+          {error && <div className="alerta-error">{error}</div>}
+          <div className="campo">
+            <label>Fecha de la remisión *</label>
+            <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} required />
+          </div>
+          <p className="muted">
+            Se corrige la fecha en el sistema; vuelve a abrir “Ver / PDF” para
+            regenerar el documento con la nueva fecha.
+          </p>
+          <div className="modal-acciones">
+            <button type="button" className="btn-secundario" onClick={onCerrar}>Cancelar</button>
+            <button type="submit" className="btn-primario" style={{ width: "auto" }} disabled={guardando}>
+              {guardando ? "Guardando…" : "Guardar fecha"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }
 

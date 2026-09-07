@@ -631,6 +631,11 @@ export const remisionesApi = {
     api<{ id: string; numero: number }>("/remisiones", { method: "POST", body: JSON.stringify(datos) }),
   anular: (id: string) =>
     api<{ ok: boolean }>(`/remisiones/${id}/anular`, { method: "PATCH" }),
+  cambiarFecha: (id: string, fecha: string) =>
+    api<{ ok: boolean }>(`/remisiones/${id}/fecha`, {
+      method: "PATCH",
+      body: JSON.stringify({ fecha }),
+    }),
   importar: (filas: FilaImportRemision[]) =>
     api<{ remisionesCreadas: number; filasProcesadas: number }>("/remisiones/importar", {
       method: "POST",
