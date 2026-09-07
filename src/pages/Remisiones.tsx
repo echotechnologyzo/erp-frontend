@@ -303,11 +303,12 @@ export function Remisiones() {
                       <button className="btn-secundario" style={{ padding: "6px 12px" }} onClick={() => duplicar(r)}>
                         Duplicar
                       </button>
+                      {/* Botón "Fecha" desactivado a pedido; reactivar cuando se necesite:
                       {esAdmin && (
                         <button className="btn-secundario" style={{ padding: "6px 12px" }} onClick={() => setEditarFecha(r)}>
                           Fecha
                         </button>
-                      )}
+                      )} */}
                       {r.estado === "ANULADA" ? (
                         <span className="badge-sede">Anulada</span>
                       ) : (
