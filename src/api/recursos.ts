@@ -178,7 +178,28 @@ export const inventarioApi = {
       method: "POST",
       body: JSON.stringify(datos),
     }),
+  // Ajuste masivo por conteo físico (Excel): deja el stock en la cantidad real.
+  importarAjustes: (filas: FilaImportAjuste[]) =>
+    api<ResumenImportAjustes>("/inventario/ajustes/importar", {
+      method: "POST",
+      body: JSON.stringify({ filas }),
+    }),
 };
+
+// Fila del Excel de ajuste por conteo físico.
+export interface FilaImportAjuste {
+  sede: string;
+  articuloCodigo: string;
+  cantidadReal: number;
+  costoUnitario?: number;
+  observacion?: string;
+}
+export interface ResumenImportAjustes {
+  recibidas: number;
+  ajustados: number;
+  sinCambio: number;
+  errores: { fila: number; error: string }[];
+}
 
 // --- Catálogos ---
 export interface Sede {

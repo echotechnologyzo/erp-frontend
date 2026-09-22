@@ -4,7 +4,8 @@
 //  - Traslados:   mover artículos entre Bogotá y Medellín.
 //  - Trazabilidad: kardex de movimientos (compras, ajustes, traslados…).
 // ==========================================================================
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import * as XLSX from "xlsx";
 import {
   inventarioApi,
   catalogosApi,
@@ -13,8 +14,10 @@ import {
   type Movimiento,
   type Sede,
   type Articulo,
+  type FilaImportAjuste,
 } from "../api/recursos";
 import { SelectorArticulo } from "../components/SelectorArticulo";
+import { leerLibroExcel } from "../utils/excel";
 import { useAuth } from "../auth/AuthContext";
 
 const moneda = (v: number | string) =>
@@ -65,6 +68,7 @@ function Existencias() {
   const [error, setError] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [ajuste, setAjuste] = useState<Existencia | null>(null);
+  const [importando, setImportando] = useState(false);
 
   async function cargar() {
     setCargando(true);
@@ -75,6 +79,77 @@ function Existencias() {
       setError(e instanceof Error ? e.message : "Error al cargar existencias.");
     } finally {
       setCargando(false);
+    }
+  }
+
+  // Plantilla de Excel para el ajuste por conteo físico.
+  function descargarPlantilla() {
+    const datos = [
+      ["Sede", "Código", "Cantidad real", "Costo unitario", "Observación"],
+      ["Medellín", "000006", 12, 120000, "Conteo físico"],
+      ["Bogotá", "35", 8, 110000, ""],
+    ];
+    const hoja = XLSX.utils.aoa_to_sheet(datos);
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, "Ajuste");
+    XLSX.writeFile(libro, "plantilla_ajuste_inventario.xlsx");
+  }
+
+  // Importa el conteo físico: deja el stock de cada artículo en la cantidad real.
+  async function onArchivoExcel(e: ChangeEvent<HTMLInputElement>) {
+    const archivo = e.target.files?.[0];
+    if (!archivo) return;
+    setError(null);
+    setAviso(null);
+    setImportando(true);
+    try {
+      const libro = await leerLibroExcel(archivo);
+      const hoja = libro.Sheets[libro.SheetNames[0]];
+      const matriz = XLSX.utils.sheet_to_json<(string | number)[]>(hoja, { header: 1, blankrows: false });
+      if (matriz.length < 2) throw new Error("El archivo no tiene filas de datos.");
+      const norm = (s: unknown) =>
+        String(s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
+      const enc = (matriz[0] as unknown[]).map((c) => norm(c));
+      const idx = {
+        sede: enc.findIndex((h) => h.includes("sede")),
+        codigo: enc.findIndex((h) => h.includes("codigo") || h.includes("cod")),
+        cantidad: enc.findIndex((h) => h.includes("cantidad") || h.includes("real") || h.includes("conteo")),
+        costo: enc.findIndex((h) => h.includes("costo")),
+        obs: enc.findIndex((h) => h.includes("observ")),
+      };
+      if (idx.sede < 0 || idx.codigo < 0 || idx.cantidad < 0) {
+        throw new Error("No se reconocieron las columnas Sede, Código y Cantidad real.");
+      }
+      const filas: FilaImportAjuste[] = [];
+      for (const row of matriz.slice(1) as unknown[][]) {
+        const sede = String(row[idx.sede] ?? "").trim();
+        const codigo = String(row[idx.codigo] ?? "").trim();
+        const cantRaw = row[idx.cantidad];
+        if (!sede || !codigo || cantRaw === undefined || cantRaw === null || String(cantRaw).trim() === "") continue;
+        const cantidadReal = Number(cantRaw);
+        if (!Number.isFinite(cantidadReal)) continue;
+        const fila: FilaImportAjuste = { sede, articuloCodigo: codigo, cantidadReal };
+        if (idx.costo >= 0 && row[idx.costo] !== undefined && String(row[idx.costo]).trim() !== "") {
+          const c = Number(row[idx.costo]);
+          if (Number.isFinite(c)) fila.costoUnitario = c;
+        }
+        if (idx.obs >= 0 && row[idx.obs]) fila.observacion = String(row[idx.obs]).trim();
+        filas.push(fila);
+      }
+      if (!filas.length) throw new Error("No se encontraron filas válidas (Sede, Código y Cantidad real).");
+      const r = await inventarioApi.importarAjustes(filas);
+      setAviso(
+        `Ajuste aplicado: ${r.ajustados} artículos actualizados` +
+          (r.sinCambio ? `, ${r.sinCambio} sin cambio` : "") +
+          (r.errores.length ? `, ${r.errores.length} con error` : "") +
+          "."
+      );
+      cargar();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al importar el ajuste.");
+    } finally {
+      setImportando(false);
+      e.target.value = "";
     }
   }
 
@@ -102,7 +177,19 @@ function Existencias() {
           onKeyDown={(e) => e.key === "Enter" && cargar()}
         />
         <button className="btn-secundario" onClick={cargar}>Buscar</button>
+        <button className="btn-secundario" onClick={descargarPlantilla}>Plantilla ajuste</button>
+        <label
+          className="btn-secundario"
+          style={{ cursor: importando ? "wait" : "pointer", opacity: importando ? 0.6 : 1 }}
+        >
+          {importando ? "Importando…" : "Importar ajuste (Excel)"}
+          <input type="file" accept=".xls,.xlsx" hidden disabled={importando} onChange={onArchivoExcel} />
+        </label>
       </div>
+      <p className="muted" style={{ marginTop: -8, marginBottom: 12 }}>
+        El ajuste por Excel es un <strong>conteo físico</strong>: escribe la cantidad real de
+        cada artículo y el sistema deja el stock exactamente en ese valor (por sede).
+      </p>
 
       {error && <div className="alerta-error">{error}</div>}
       {aviso && <div className="alerta-ok">{aviso}</div>}
