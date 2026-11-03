@@ -153,6 +153,29 @@ function Existencias() {
     }
   }
 
+  // Deshace el último lote de ajuste importado (restaura el stock previo).
+  async function revertirAjuste() {
+    if (!window.confirm(
+      "Deshacer el ÚLTIMO ajuste importado: se devolverá el stock de esos artículos al valor que tenían antes. ¿Continuar?"
+    )) return;
+    setError(null);
+    setAviso(null);
+    setImportando(true);
+    try {
+      const r = await inventarioApi.revertirAjuste();
+      setAviso(
+        `Ajuste deshecho: ${r.revertidos} de ${r.enLote} artículos restaurados` +
+          (r.errores.length ? `, ${r.errores.length} con error` : "") +
+          ". Revisa el stock y, si hace falta, el costo de los que habían subido."
+      );
+      cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error al deshacer el ajuste.");
+    } finally {
+      setImportando(false);
+    }
+  }
+
   useEffect(() => {
     catalogosApi.sedes().then(setSedes);
   }, []);
@@ -185,6 +208,16 @@ function Existencias() {
           {importando ? "Importando…" : "Importar ajuste (Excel)"}
           <input type="file" accept=".xls,.xlsx" hidden disabled={importando} onChange={onArchivoExcel} />
         </label>
+        {esAdmin && (
+          <button
+            className="btn-secundario"
+            style={{ color: "var(--echo-coral)", borderColor: "var(--echo-coral)" }}
+            disabled={importando}
+            onClick={revertirAjuste}
+          >
+            Deshacer último ajuste
+          </button>
+        )}
       </div>
       <p className="muted" style={{ marginTop: -8, marginBottom: 12 }}>
         El ajuste por Excel es un <strong>conteo físico</strong>: escribe la cantidad real de

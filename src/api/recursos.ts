@@ -184,6 +184,12 @@ export const inventarioApi = {
       method: "POST",
       body: JSON.stringify({ filas }),
     }),
+  // Deshace el último lote de ajuste importado (restaura el stock previo).
+  revertirAjuste: () =>
+    api<{ ok: boolean; enLote: number; revertidos: number; errores: { articuloId: string; error: string }[] }>(
+      "/inventario/ajustes/revertir-ultimo",
+      { method: "POST" }
+    ),
 };
 
 // Fila del Excel de ajuste por conteo físico.
