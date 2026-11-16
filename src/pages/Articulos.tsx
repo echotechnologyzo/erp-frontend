@@ -26,6 +26,18 @@ const norm = (s: unknown) =>
     .replace(/[̀-ͯ]/g, "") // quita acentos
     .replace(/[^a-z0-9]/g, "");
 
+// Convierte un texto en un slug seguro para URL (sin acentos ni símbolos).
+// Debe coincidir con el slugify del backend (publico.mapper.ts).
+function slugify(texto: string): string {
+  return String(texto ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "") // quita acentos
+    .replace(/[^a-z0-9]+/g, "-") // no alfanumérico -> guion
+    .replace(/^-+|-+$/g, "") // sin guiones al inicio/fin
+    .slice(0, 80);
+}
+
 // Mapea los encabezados del Excel de artículos de Effi a los campos internos.
 // Devuelve, por cada campo reconocido, el índice de su columna.
 function mapearEncabezados(encabezados: string[]): Record<string, number> {
@@ -499,10 +511,24 @@ function ModalArticulo({
     urlFoto: articulo?.urlFoto ?? "",
     marca: articulo?.marca?.nombre ?? "",
     esTercero: articulo?.esTercero ?? false,
+    // --- Tienda web ---
+    visibleWeb: articulo?.visibleWeb ?? false,
+    destacado: articulo?.destacado ?? false,
+    slug: articulo?.slug ?? "",
+    grupoWeb: articulo?.grupoWeb ?? "",
+    color: articulo?.color ?? "",
+    colorHex: articulo?.colorHex ?? "",
+    precioAntes: articulo?.precioAntes ?? null,
+    fotosWeb: articulo?.fotosWeb ?? [],
+    resumenWeb: articulo?.resumenWeb ?? "",
   });
+  // Pestaña activa del modal: datos generales o tienda web.
+  const [tab, setTab] = useState<"general" | "web">("general");
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [subiendo, setSubiendo] = useState(false);
+  // Subida en curso de una foto de la galería web.
+  const [subiendoWeb, setSubiendoWeb] = useState(false);
   const [marcas, setMarcas] = useState<Marca[]>([]);
 
   // Marcas existentes para sugerir en el campo (datalist). Se puede escribir una
@@ -532,6 +558,33 @@ function ModalArticulo({
     }
   }
 
+  // Genera un slug para la ficha web a partir del nombre (y color si lo hay).
+  function generarSlug() {
+    const base = [form.nombre, form.color].filter(Boolean).join(" ");
+    set("slug", slugify(base));
+  }
+
+  // Sube una foto a la galería web (se añade al final de fotosWeb).
+  async function onSubirFotoWeb(e: ChangeEvent<HTMLInputElement>) {
+    const archivo = e.target.files?.[0];
+    if (!archivo) return;
+    setError(null);
+    setSubiendoWeb(true);
+    try {
+      const { url } = await uploadsApi.subirImagen(archivo);
+      set("fotosWeb", [...(form.fotosWeb ?? []), url]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al subir la imagen.");
+    } finally {
+      setSubiendoWeb(false);
+      e.target.value = "";
+    }
+  }
+
+  function quitarFotoWeb(url: string) {
+    set("fotosWeb", (form.fotosWeb ?? []).filter((u) => u !== url));
+  }
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
@@ -554,6 +607,41 @@ function ModalArticulo({
         <form onSubmit={onSubmit}>
           {error && <div className="alerta-error">{error}</div>}
 
+          {/* Pestañas: datos generales vs. tienda web. Ambos paneles quedan
+              montados (se ocultan con CSS) para conservar la validación del
+              campo "Nombre" y no perder lo escrito al cambiar de pestaña. */}
+          <div style={{ display: "flex", gap: 8, borderBottom: "1px solid #eceae6", marginBottom: 16 }}>
+            <button
+              type="button"
+              onClick={() => setTab("general")}
+              className="btn-secundario"
+              style={{
+                border: "none",
+                borderRadius: 0,
+                borderBottom: tab === "general" ? "2px solid var(--echo-azul, #0FA6D1)" : "2px solid transparent",
+                fontWeight: tab === "general" ? 700 : 500,
+                background: "transparent",
+              }}
+            >
+              Datos generales
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("web")}
+              className="btn-secundario"
+              style={{
+                border: "none",
+                borderRadius: 0,
+                borderBottom: tab === "web" ? "2px solid var(--echo-azul, #0FA6D1)" : "2px solid transparent",
+                fontWeight: tab === "web" ? 700 : 500,
+                background: "transparent",
+              }}
+            >
+              Tienda web{form.visibleWeb ? " ✓" : ""}
+            </button>
+          </div>
+
+          <div style={{ display: tab === "general" ? "block" : "none" }}>
           <div className="grid-2">
             <div className="campo">
               <label>Nombre *</label>
@@ -682,6 +770,168 @@ function ModalArticulo({
               </button>
             </div>
           ) : null}
+          </div>
+
+          {/* --- Panel: Tienda web (catálogo público echo-web) --- */}
+          <div style={{ display: tab === "web" ? "block" : "none" }}>
+            <p className="muted" style={{ marginTop: 0 }}>
+              Controla cómo aparece este artículo en la tienda web pública. El costo
+              y el precio mínimo <strong>nunca</strong> se publican.
+            </p>
+
+            <div className="grid-2">
+              <div className="campo">
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={form.visibleWeb ?? false}
+                    onChange={(e) => set("visibleWeb", e.target.checked)}
+                    style={{ width: "auto" }}
+                  />
+                  Mostrar en la tienda web
+                </label>
+              </div>
+              <div className="campo">
+                <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={form.destacado ?? false}
+                    onChange={(e) => set("destacado", e.target.checked)}
+                    style={{ width: "auto" }}
+                  />
+                  Destacado (sale en “Más vendidos”)
+                </label>
+              </div>
+            </div>
+
+            <div className="campo">
+              <label>URL de la ficha (slug)</label>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <input
+                  style={{ flex: 1, minWidth: 220 }}
+                  placeholder="echo-dot-5-azul"
+                  value={form.slug ?? ""}
+                  onChange={(e) => set("slug", slugify(e.target.value))}
+                />
+                <button type="button" className="btn-secundario" style={{ whiteSpace: "nowrap" }} onClick={generarSlug}>
+                  Generar del nombre
+                </button>
+              </div>
+              <small className="muted">Dirección pública: /producto/{form.slug || "…"}</small>
+            </div>
+
+            <div className="campo">
+              <label>Resumen web (1–2 líneas, para la tarjeta y el SEO)</label>
+              <textarea
+                rows={2}
+                value={form.resumenWeb ?? ""}
+                onChange={(e) => set("resumenWeb", e.target.value)}
+                placeholder="Parlante inteligente con Alexa y sonido potente…"
+              />
+            </div>
+
+            <div className="grid-2">
+              <div className="campo">
+                <label>Precio antes (tachado)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.precioAntes ?? ""}
+                  onChange={(e) => set("precioAntes", e.target.value === "" ? null : Number(e.target.value))}
+                  placeholder="Opcional"
+                />
+              </div>
+              <div className="campo">
+                <label>Grupo de variantes</label>
+                <input
+                  value={form.grupoWeb ?? ""}
+                  onChange={(e) => set("grupoWeb", e.target.value)}
+                  placeholder="echo-dot-5 (igual en todos los colores)"
+                />
+              </div>
+            </div>
+
+            <div className="grid-2">
+              <div className="campo">
+                <label>Color</label>
+                <input
+                  value={form.color ?? ""}
+                  onChange={(e) => set("color", e.target.value)}
+                  placeholder="Azul, Blanco…"
+                />
+              </div>
+              <div className="campo">
+                <label>Color (muestra para el selector)</label>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <input
+                    type="color"
+                    value={form.colorHex || "#000000"}
+                    onChange={(e) => set("colorHex", e.target.value)}
+                    style={{ width: 48, height: 38, padding: 2 }}
+                  />
+                  <input
+                    style={{ flex: 1 }}
+                    value={form.colorHex ?? ""}
+                    onChange={(e) => set("colorHex", e.target.value)}
+                    placeholder="#1E3A8A"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Galería web: la imagen principal sigue siendo la de Datos generales */}
+            <div className="campo">
+              <label>Galería de fotos (web)</label>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <label
+                  className="btn-secundario"
+                  style={{ cursor: subiendoWeb ? "wait" : "pointer", opacity: subiendoWeb ? 0.6 : 1 }}
+                >
+                  {subiendoWeb ? "Subiendo…" : "+ Agregar foto"}
+                  <input type="file" accept="image/*" hidden disabled={subiendoWeb} onChange={onSubirFotoWeb} />
+                </label>
+                <small className="muted" style={{ alignSelf: "center" }}>
+                  La principal es la de “Datos generales”; aquí van las adicionales.
+                </small>
+              </div>
+              {(form.fotosWeb?.length ?? 0) > 0 && (
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 10 }}>
+                  {form.fotosWeb!.map((url) => (
+                    <div key={url} style={{ position: "relative" }}>
+                      <img
+                        src={url}
+                        alt=""
+                        className="previa-articulo"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => quitarFotoWeb(url)}
+                        title="Quitar"
+                        style={{
+                          position: "absolute",
+                          top: -8,
+                          right: -8,
+                          width: 24,
+                          height: 24,
+                          borderRadius: "50%",
+                          border: "none",
+                          background: "var(--echo-coral, #e5564e)",
+                          color: "#fff",
+                          cursor: "pointer",
+                          lineHeight: 1,
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
           <div className="modal-acciones">
             <button type="button" className="btn-secundario" onClick={onCerrar}>
