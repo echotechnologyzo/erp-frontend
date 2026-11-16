@@ -27,6 +27,16 @@ export interface Articulo {
   marca: { nombre: string } | null;
   inventario: InventarioSede[];
   stockTotal: number;
+  // --- Tienda web (catálogo público echo-web) ---
+  visibleWeb?: boolean;
+  destacado?: boolean;
+  slug?: string | null;
+  grupoWeb?: string | null;
+  color?: string | null;
+  colorHex?: string | null;
+  precioAntes?: number | null;
+  fotosWeb?: string[];
+  resumenWeb?: string | null;
 }
 
 export interface NuevoArticulo {
@@ -45,6 +55,16 @@ export interface NuevoArticulo {
   activo?: boolean;
   // Valor a terceros (flete): no controla inventario ni cuenta como venta.
   esTercero?: boolean;
+  // --- Tienda web (catálogo público echo-web) ---
+  visibleWeb?: boolean;
+  destacado?: boolean;
+  slug?: string;
+  grupoWeb?: string;
+  color?: string;
+  colorHex?: string;
+  precioAntes?: number | null;
+  fotosWeb?: string[];
+  resumenWeb?: string;
 }
 
 // Fila plana para importar artículos desde el Excel de Effi (claves ya
