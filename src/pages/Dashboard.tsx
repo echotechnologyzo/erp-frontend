@@ -16,6 +16,7 @@ const Proveedores = lazy(() => import("./Proveedores").then((m) => ({ default: m
 const Empleados   = lazy(() => import("./Empleados").then((m) => ({ default: m.Empleados })));
 const Remisiones  = lazy(() => import("./Remisiones").then((m) => ({ default: m.Remisiones })));
 const Seguimientos = lazy(() => import("./Seguimientos").then((m) => ({ default: m.Seguimientos })));
+const PedidosWeb  = lazy(() => import("./PedidosWeb").then((m) => ({ default: m.PedidosWeb })));
 const Comisiones  = lazy(() => import("./Comisiones").then((m) => ({ default: m.Comisiones })));
 const Reportes    = lazy(() => import("./Reportes").then((m) => ({ default: m.Reportes })));
 const Usuarios    = lazy(() => import("./Usuarios").then((m) => ({ default: m.Usuarios })));
@@ -30,6 +31,7 @@ type Vista =
   | "empleados"
   | "remisiones"
   | "seguimientos"
+  | "pedidos-web"
   | "usuarios"
   | "comisiones"
   | "reportes";
@@ -117,6 +119,7 @@ export function Dashboard() {
           {esAdmin && <Link id="empleados">Empleados</Link>}
           <Link id="remisiones">Remisiones</Link>
           <Link id="seguimientos">Seguimientos</Link>
+          <Link id="pedidos-web">Pedidos web</Link>
           {esAdmin && <Link id="usuarios">Usuarios</Link>}
           {esAdmin && <Link id="comisiones">Comisiones</Link>}
           {esAdmin && <Link id="reportes">Reportes</Link>}
@@ -146,6 +149,7 @@ export function Dashboard() {
           {vista === "empleados"   && esAdmin && <Empleados />}
           {vista === "remisiones"  && <Remisiones />}
           {vista === "seguimientos" && <Seguimientos />}
+          {vista === "pedidos-web" && <PedidosWeb />}
           {vista === "comisiones"  && esAdmin && <Comisiones />}
           {vista === "reportes"    && esAdmin && <Reportes />}
           {vista === "usuarios"    && esAdmin && <Usuarios />}
@@ -175,6 +179,7 @@ function Inicio({
     { id: "proveedores", titulo: "Proveedores", desc: "Directorio de proveedores.", fase: "Disponible" },
     { id: "clientes", titulo: "Clientes", desc: "Directorio + importar/exportar.", fase: "Disponible" },
     { id: "remisiones", titulo: "Remisiones", desc: "Ventas, garantía e impresión PDF.", fase: "Disponible" },
+    { id: "pedidos-web", titulo: "Pedidos web", desc: "Pedidos de la tienda y carritos abandonados.", fase: "Disponible" },
   ];
   const modulosAdmin: { id: Vista; titulo: string; desc: string; fase: string }[] = [
     { id: "compras", titulo: "Compras", desc: "Remisiones de compra + Excel.", fase: "Disponible" },

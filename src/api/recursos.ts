@@ -853,3 +853,52 @@ export const authApi = {
   resetPassword: (token: string, password: string) =>
     api<{ ok: boolean }>("/auth/reset-password", { method: "POST", body: JSON.stringify({ token, password }) }),
 };
+
+// ==========================================================================
+// Pedidos de la tienda web (panel de gestión / carritos abandonados).
+// ==========================================================================
+export interface PedidoItemWeb {
+  nombre: string;
+  slug: string;
+  color: string | null;
+  precioUnitario: number;
+  cantidad: number;
+  subtotal: number;
+}
+export interface PedidoWeb {
+  referencia: string;
+  estado: string;
+  metodoPago: string;
+  zonaEnvio: string;
+  transportadora: string | null;
+  costoEnvio: number;
+  subtotal: number;
+  total: number;
+  cliente: { nombre: string; documento: string | null; email: string; telefono: string };
+  envio: { departamento: string; ciudad: string; direccion: string; referencia: string | null };
+  wompi: { transactionId: string | null; estado: string | null; pagadoEn: string | null };
+  items: PedidoItemWeb[];
+  observacion: string | null;
+  creadoEn: string;
+  actualizadoEn: string;
+}
+export interface ListadoPedidos {
+  total: number;
+  pagina: number;
+  tam: number;
+  datos: PedidoWeb[];
+}
+export const pedidosWebApi = {
+  listar: (estado = "", buscar = "", pagina = 1, tam = 20) => {
+    const qs = new URLSearchParams({ pagina: String(pagina), tam: String(tam) });
+    if (estado) qs.set("estado", estado);
+    if (buscar) qs.set("buscar", buscar);
+    return api<ListadoPedidos>(`/pedidos?${qs.toString()}`);
+  },
+  resumen: () => api<Record<string, number>>("/pedidos/resumen"),
+  actualizarEstado: (referencia: string, estado: string) =>
+    api<PedidoWeb>(`/pedidos/${encodeURIComponent(referencia)}/estado`, {
+      method: "PATCH",
+      body: JSON.stringify({ estado }),
+    }),
+};
