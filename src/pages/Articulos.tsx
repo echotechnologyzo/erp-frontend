@@ -604,7 +604,10 @@ function ModalArticulo({
     <div className="modal-fondo">
       <div className="modal" style={{ maxWidth: 680 }} onClick={(e) => e.stopPropagation()}>
         <h2>{esEdicion ? "Editar artículo" : "+ Crear nuevo artículo"}</h2>
-        <form onSubmit={onSubmit}>
+        {/* noValidate: la validación la hace el backend (zod) y se muestra en el
+            recuadro de error. Evita que un campo inválido en la pestaña oculta
+            (p. ej. costo decimal) cancele el guardado en silencio. */}
+        <form onSubmit={onSubmit} noValidate>
           {error && <div className="alerta-error">{error}</div>}
 
           {/* Pestañas: datos generales vs. tienda web. Ambos paneles quedan
@@ -662,6 +665,7 @@ function ModalArticulo({
                 <input
                   type="number"
                   min="0"
+                  step="any"
                   value={form.costo}
                   onChange={(e) => set("costo", Number(e.target.value))}
                 />
@@ -672,6 +676,7 @@ function ModalArticulo({
               <input
                 type="number"
                 min="0"
+                step="any"
                 value={form.tarifaNormal}
                 onChange={(e) => set("tarifaNormal", Number(e.target.value))}
               />
@@ -684,6 +689,7 @@ function ModalArticulo({
               <input
                 type="number"
                 min="0"
+                step="any"
                 value={form.precioMinimo}
                 onChange={(e) => set("precioMinimo", Number(e.target.value))}
               />
@@ -836,6 +842,7 @@ function ModalArticulo({
                 <input
                   type="number"
                   min="0"
+                  step="any"
                   value={form.precioAntes ?? ""}
                   onChange={(e) => set("precioAntes", e.target.value === "" ? null : Number(e.target.value))}
                   placeholder="Opcional"
