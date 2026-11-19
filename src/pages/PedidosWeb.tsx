@@ -35,6 +35,97 @@ function waLink(tel: string, nombre: string, ref: string, total: number, estado:
   return `https://wa.me/${numero}?text=${encodeURIComponent(`${saludo} ${cuerpo}`)}`;
 }
 
+// Mensaje de RECONFIRMACIÓN del pedido para enviar al cliente por WhatsApp.
+function mensajeReconfirmacion(p: PedidoWeb): string {
+  const primer = p.cliente.nombre.split(" ")[0] || "";
+  const productos = p.items
+    .map((i) => `${i.cantidad}× ${i.nombre}${i.color ? ` (${i.color})` : ""}`)
+    .join(", ");
+  const dir = `${p.envio.direccion}, ${p.envio.ciudad}${p.envio.referencia ? ` (${p.envio.referencia})` : ""}`;
+  const con =
+    p.metodoPago === "WOMPI"
+      ? "Pago en línea (Wompi)"
+      : `Contraentrega${p.transportadora ? ` con ${p.transportadora}` : ""}`;
+  return (
+    `Hola ${primer} 👋 Soy de Echo Tecnología, confirmo tu pedido ${p.referencia}:\n\n` +
+    `Nombre: ${p.cliente.nombre}\n` +
+    `Dirección: ${dir}\n` +
+    `Teléfono: ${p.cliente.telefono}\n` +
+    `Producto: ${productos}\n` +
+    `Total: ${pesos(p.total)}\n` +
+    `Con: ${con}\n\n` +
+    `¿Todo correcto para despacharlo? 🙌`
+  );
+}
+
+// Bloque de reconfirmación: copiar el mensaje o abrir el WhatsApp del cliente.
+function BotonReconfirmar({ p }: { p: PedidoWeb }) {
+  const [copiado, setCopiado] = useState(false);
+  const msg = mensajeReconfirmacion(p);
+  const tel = p.cliente.telefono.replace(/\D/g, "");
+  const numero = tel.startsWith("57") ? tel : `57${tel}`;
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(msg);
+    } catch {
+      // Fallback para navegadores sin API de portapapeles.
+      const ta = document.createElement("textarea");
+      ta.value = msg;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch { /* noop */ }
+      document.body.removeChild(ta);
+    }
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 1600);
+  }
+
+  return (
+    <div>
+      <strong>Reconfirmación</strong>
+      <div style={{ display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+        <button type="button" className="btn-secundario" onClick={copiar}>
+          {copiado ? "✓ Copiado" : "📋 Copiar"}
+        </button>
+        <a
+          href={`https://wa.me/${numero}?text=${encodeURIComponent(msg)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: "inline-block",
+            background: "#25D366",
+            color: "#fff",
+            borderRadius: 8,
+            padding: "6px 12px",
+            fontWeight: 600,
+            textDecoration: "none",
+            fontSize: 13,
+          }}
+        >
+          WhatsApp con datos
+        </a>
+      </div>
+      <pre
+        style={{
+          marginTop: 8,
+          whiteSpace: "pre-wrap",
+          fontFamily: "inherit",
+          fontSize: 12,
+          color: "#64748b",
+          background: "#fff",
+          border: "1px solid #e2e8f0",
+          borderRadius: 8,
+          padding: 10,
+          maxWidth: 320,
+        }}
+      >
+        {msg}
+      </pre>
+    </div>
+  );
+}
+
 export function PedidosWeb() {
   const [datos, setDatos] = useState<PedidoWeb[]>([]);
   const [total, setTotal] = useState(0);
@@ -224,6 +315,7 @@ export function PedidosWeb() {
                                 </select>
                               </div>
                             </div>
+                            <BotonReconfirmar p={p} />
                           </div>
                         </td>
                       </tr>
