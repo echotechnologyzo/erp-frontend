@@ -5,7 +5,7 @@
 // para hacer seguimiento. También permite cambiar el estado del pedido.
 // ==========================================================================
 import { Fragment, useCallback, useEffect, useState } from "react";
-import { pedidosWebApi, type PedidoWeb } from "../api/recursos";
+import { pedidosWebApi, type PedidoWeb, type GuiaPedido } from "../api/recursos";
 
 const pesos = (v: number) => "$" + Math.round(Number(v)).toLocaleString("es-CO");
 const fechaHora = (s: string) =>
@@ -55,6 +55,72 @@ function mensajeReconfirmacion(p: PedidoWeb): string {
     `Total: ${pesos(p.total)}\n` +
     `Con: ${con}\n\n` +
     `¿Todo correcto para despacharlo? 🙌`
+  );
+}
+
+// Bloque de guía: genera la guía de Skydropx para el pedido (recotiza con la
+// dirección real + contraentrega si aplica) y muestra tracking + PDF.
+function BotonGuia({ p, onDone }: { p: PedidoWeb; onDone: () => void }) {
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [guia, setGuia] = useState<GuiaPedido | null>(null);
+
+  if (p.zonaEnvio !== "NACIONAL") {
+    return (
+      <div>
+        <strong>Guía</strong>
+        <div style={{ fontSize: 13, color: "#64748b", marginTop: 6, maxWidth: 240 }}>
+          Mensajero directo (zona fija), sin guía de transportadora.
+        </div>
+      </div>
+    );
+  }
+
+  async function generar() {
+    if (!window.confirm(`¿Generar la guía de Skydropx para ${p.referencia}?\nEsto crea un envío REAL con la transportadora.`)) return;
+    setCargando(true);
+    setError(null);
+    try {
+      const res = await pedidosWebApi.generarGuia(p.referencia);
+      setGuia(res.guia);
+      onDone();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "No se pudo generar la guía.");
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  const ya = p.tieneGuia || !!guia;
+  return (
+    <div>
+      <strong>Guía</strong>
+      <div style={{ marginTop: 6 }}>
+        {!ya && (
+          <button type="button" className="btn-secundario" disabled={cargando} onClick={generar}>
+            {cargando ? "Generando…" : "🏷️ Generar guía"}
+          </button>
+        )}
+        {guia && (
+          <div style={{ fontSize: 13, marginTop: 6, lineHeight: 1.6 }}>
+            ✓ {guia.carrier} · {guia.tracking}
+            {guia.precio != null ? ` · ${pesos(guia.precio)}` : ""}
+            {guia.guiaUrl && (
+              <>
+                <br />
+                <a href={guia.guiaUrl} target="_blank" rel="noopener noreferrer">
+                  Ver / descargar guía (PDF)
+                </a>
+              </>
+            )}
+          </div>
+        )}
+        {!guia && p.tieneGuia && (
+          <div style={{ fontSize: 13, color: "#16a34a", marginTop: 6 }}>✓ Guía ya generada para este pedido.</div>
+        )}
+        {error && <div style={{ fontSize: 13, color: "#dc2626", marginTop: 6, maxWidth: 240 }}>{error}</div>}
+      </div>
+    </div>
   );
 }
 
@@ -315,6 +381,7 @@ export function PedidosWeb() {
                                 </select>
                               </div>
                             </div>
+                            <BotonGuia p={p} onDone={cargar} />
                             <BotonReconfirmar p={p} />
                           </div>
                         </td>

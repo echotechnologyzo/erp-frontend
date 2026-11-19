@@ -879,6 +879,7 @@ export interface PedidoWeb {
   wompi: { transactionId: string | null; estado: string | null; pagadoEn: string | null };
   items: PedidoItemWeb[];
   observacion: string | null;
+  tieneGuia: boolean;
   creadoEn: string;
   actualizadoEn: string;
 }
@@ -901,4 +902,14 @@ export const pedidosWebApi = {
       method: "PATCH",
       body: JSON.stringify({ estado }),
     }),
+  generarGuia: (referencia: string) =>
+    api<PedidoWeb & { guia: GuiaPedido }>(`/pedidos/${encodeURIComponent(referencia)}/generar-guia`, {
+      method: "POST",
+    }),
 };
+export interface GuiaPedido {
+  tracking: string;
+  carrier: string;
+  guiaUrl: string | null;
+  precio: number | null;
+}
