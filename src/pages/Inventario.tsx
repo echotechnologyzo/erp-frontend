@@ -82,6 +82,36 @@ function Existencias() {
     }
   }
 
+  // Exporta a Excel las existencias actuales (respeta los filtros de sede y
+  // búsqueda) para analizarlas. Incluye costo/valores solo para ADMIN.
+  function exportarExcel() {
+    const fecha = new Date().toISOString().slice(0, 10);
+    const datos = filas.map((f) => {
+      const cant = Number(f.cantidad);
+      const precio = Math.round(Number(f.articulo.tarifaNormal));
+      const costo = Math.round(Number(f.costoPromedio));
+      const fila: Record<string, string | number> = {
+        "Código": f.articulo.codigo,
+        "Artículo": f.articulo.nombre,
+        "Sede": f.sede.nombre,
+        "Cantidad": cant,
+        "Stock mínimo": Number(f.stockMinimo),
+        "Bajo stock": Number(f.stockMinimo) > 0 && cant <= Number(f.stockMinimo) ? "Sí" : "No",
+      };
+      if (esAdmin) {
+        fila["Costo promedio"] = costo;
+        fila["Valor en costo"] = cant * costo;
+      }
+      fila["Precio venta"] = precio;
+      fila["Valor en venta"] = cant * precio;
+      return fila;
+    });
+    const hoja = XLSX.utils.json_to_sheet(datos);
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, "Inventario");
+    XLSX.writeFile(libro, `inventario_echo_${fecha}.xlsx`);
+  }
+
   // Plantilla de Excel para el ajuste por conteo físico.
   function descargarPlantilla() {
     const datos = [
@@ -200,6 +230,14 @@ function Existencias() {
           onKeyDown={(e) => e.key === "Enter" && cargar()}
         />
         <button className="btn-secundario" onClick={cargar}>Buscar</button>
+        <button
+          className="btn-secundario"
+          onClick={exportarExcel}
+          disabled={cargando || filas.length === 0}
+          title="Descarga las existencias actuales (según los filtros) en Excel"
+        >
+          ⬇ Exportar a Excel
+        </button>
         <button className="btn-secundario" onClick={descargarPlantilla}>Plantilla ajuste</button>
         <label
           className="btn-secundario"
